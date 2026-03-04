@@ -1,6 +1,5 @@
 import "./globals.css";
-import { Footer } from '@/components/Footer';
-import { Header } from '@/components/Header';
+import LayoutWrapper from '@/components/LayoutWrapper';
 import type { Metadata } from "next";
 
 
@@ -20,14 +19,10 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <body
-        className={`antialiased`}
-      >
-        <Header user={JSON.parse(JSON.stringify(user))} />
-        {children}
-
-        <Footer />
-
+      <body className={`antialiased`}>
+        <LayoutWrapper user={user ? JSON.parse(JSON.stringify(user)) : null}>
+          {children}
+        </LayoutWrapper>
       </body>
     </html>
   );

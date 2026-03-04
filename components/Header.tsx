@@ -105,6 +105,12 @@ export function Header({ user }: { user: any }) {
                                                     <LayoutDashboard size={16} />
                                                     Dashboard
                                                 </Link>
+                                                {user.role === 'admin' && (
+                                                    <Link href="/admin" onClick={() => setIsDropdownOpen(false)} className="flex items-center gap-3 px-3 py-2 text-sm text-[hsl(199,89%,48%)] hover:bg-[hsl(199,89%,48%,0.08)] rounded-lg transition-colors font-bold">
+                                                        <Settings size={16} />
+                                                        Admin Panel
+                                                    </Link>
+                                                )}
                                                 <Link href="/profile" onClick={() => setIsDropdownOpen(false)} className="flex items-center gap-3 px-3 py-2 text-sm text-[hsl(215,25%,15%)] hover:bg-[hsl(217,91%,60%,0.08)] hover:text-[hsl(217,91%,60%)] rounded-lg transition-colors font-medium">
                                                     <User size={16} />
                                                     Profile

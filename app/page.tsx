@@ -108,10 +108,10 @@ export default function SprintIoPage() {
             Transform your learning into an exhilarating sprint. Earn XP, maintain streaks, unlock rewards, and compete with learners worldwide.
           </motion.p>
           <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={3} className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <button className="bg-[hsl(217,91%,60%)] text-white text-base px-8 py-4 rounded-xl font-bold inline-flex items-center gap-2 hover:bg-[hsl(217,91%,55%)] transition-colors shadow-[0_0_60px_hsl(217,91%,60%,0.2)]">
-              Start a Sprint <ArrowRight size={18} />
+            <button onClick={() => window.location.href = "/dashboard"} className="bg-[hsl(217,91%,60%)] text-white text-base px-8 py-4 rounded-xl font-bold inline-flex items-center gap-2 hover:bg-[hsl(217,91%,55%)] transition-colors shadow-[0_0_60px_hsl(217,91%,60%,0.2)]">
+              Get started <ArrowRight size={18} />
             </button>
-            <button className="border border-[hsl(210,20%,88%)] bg-[hsl(210,25%,96%)] text-[hsl(215,25%,15%)] text-base px-8 py-4 rounded-xl font-semibold hover:bg-[hsl(199,89%,48%,0.05)] transition-colors">
+            <button onClick={() => window.location.href = "/paths"} className="border border-[hsl(210,20%,88%)] bg-[hsl(210,25%,96%)] text-[hsl(215,25%,15%)] text-base px-8 py-4 rounded-xl font-semibold hover:bg-[hsl(199,89%,48%,0.05)] transition-colors">
               Explore Paths
             </button>
           </motion.div>
@@ -312,7 +312,7 @@ export default function SprintIoPage() {
               Join millions of learners who&apos;ve transformed their habits. Your first Sprint is free.
             </motion.p>
             <motion.div variants={fadeUp} custom={3}>
-              <button className="bg-[hsl(217,91%,60%)] text-white text-base px-10 py-4 rounded-xl font-bold inline-flex items-center gap-2 hover:bg-[hsl(217,91%,55%)] transition-colors shadow-[0_0_60px_hsl(217,91%,60%,0.2)]">
+              <button onClick={() => window.location.href = "/dashboard"} className="bg-[hsl(217,91%,60%)] text-white text-base px-10 py-4 rounded-xl font-bold inline-flex items-center gap-2 hover:bg-[hsl(217,91%,55%)] transition-colors shadow-[0_0_60px_hsl(217,91%,60%,0.2)]">
                 Begin Your Journey <ArrowRight size={18} />
               </button>
             </motion.div>

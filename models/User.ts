@@ -6,6 +6,7 @@ export interface IUser {
     password: string
     totalXP: number
     currentStreak: number
+    role: "user" | "admin"
     lastSprintDate?: Date
     skills: {
         pathId: string
@@ -21,6 +22,7 @@ const userSchema = new Schema<IUser>({
     password: { type: String, required: true },
     totalXP: { type: Number, default: 0 },
     currentStreak: { type: Number, default: 0 },
+    role: { type: String, enum: ["user", "admin"], default: "user" },
     lastSprintDate: { type: Date },
     skills: [
         {

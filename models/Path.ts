@@ -5,6 +5,7 @@ export interface IPath {
     slug: string
     description: string
     icon?: string
+    category: string
 }
 
 const pathSchema = new Schema<IPath>(
@@ -13,6 +14,7 @@ const pathSchema = new Schema<IPath>(
         slug: { type: String, required: true, unique: true },
         description: { type: String, required: true },
         icon: { type: String },
+        category: { type: String, default: "General" },
     },
     { timestamps: true }
 )
