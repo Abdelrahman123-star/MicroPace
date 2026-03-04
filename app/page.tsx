@@ -1,12 +1,16 @@
 "use client";
-import { motion, useScroll, useTransform, useSpring } from "framer-motion";
+import { motion, useScroll, useTransform, } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
-import Image from "next/image";
+
+import { SprintDemo } from '@/components/sprint-demo';
+import { SkillPath } from '@/components/skill-path';
 
 import {
-  Sparkles, Zap, Flame, Target, Trophy, Star, ArrowRight,
-  Snowflake, Shield, BarChart3, Globe,
+  Sparkles, Flame, ArrowRight,
+  Snowflake,
 } from "lucide-react";
+import { HowItWorks } from "@/components/how-it-work";
+import { features, testimonials, stats, leaderboard } from "@/lib/constants";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 40 },
@@ -16,109 +20,16 @@ const fadeUp = {
   }),
 };
 
-const features = [
-  { icon: Zap, title: "XP System", desc: "Earn experience points for every lesson, quiz, and challenge you complete.", xp: "+250 XP" },
-  { icon: Flame, title: "Daily Streaks", desc: "Keep your streak alive with consistent daily learning. Don't break the chain.", streak: "🔥 47 days" },
-  { icon: Trophy, title: "Rewards & Badges", desc: "Unlock exclusive badges and climb the leaderboard as you master new skills.", badge: "⭐ Elite" },
-  { icon: Target, title: "Skill Paths", desc: "Follow curated learning paths designed by experts to master any subject.", progress: 78 },
-];
 
-// Add this with your other data arrays
-const testimonials = [
-  {
-    name: "Alex Chen",
-    role: "Software Engineer",
-    text: "This platform turned my random studying into a structured journey. 200-day streak and counting! The gamification is genuinely addictive.",
-    xp: "45,200 XP",
-    avatar: "AC"
-  },
-  {
-    name: "Sarah Kim",
-    role: "Product Designer",
-    text: "The Sprint feature is addictive in the best way. I've never been this consistent with learning. It's transformed my career.",
-    xp: "32,800 XP",
-    avatar: "SK"
-  },
-  {
-    name: "Marcus Rivera",
-    role: "Data Scientist",
-    text: "Leaderboard competition with friends keeps me going. Best investment in myself I've ever made.",
-    xp: "28,400 XP",
-    avatar: "MR"
-  },
-  {
-    name: "Priya Sharma",
-    role: "UX Researcher",
-    text: "The skill paths are brilliantly designed. Each lesson builds on the last perfectly. I've gone from beginner to advanced in months.",
-    xp: "38,100 XP",
-    avatar: "PS"
-  },
-];
+// Constants are imported from @/lib/constants
 
-const stats = [
-  { value: "2M+", label: "Active Learners" },
-  { value: "500K+", label: "Sprints Completed" },
-  { value: "98%", label: "Completion Rate" },
-  { value: "4.9★", label: "User Rating" },
-];
-
-const leaderboard = [
-  { rank: 1, name: "NovaCoder", xp: "52,340", streak: 186 },
-  { rank: 2, name: "PixelMind", xp: "48,920", streak: 142 },
-  { rank: 3, name: "ZenLearner", xp: "45,200", streak: 127 },
-  { rank: 4, name: "ByteQuest", xp: "41,800", streak: 98 },
-  { rank: 5, name: "SkillForge", xp: "38,500", streak: 89 },
-];
-
-// ─── Skill Paths Data ───
-const skillPaths = [
-  { name: "Frontend Mastery", progress: 82, modules: 24, icon: Globe },
-  { name: "Data Science", progress: 65, modules: 32, icon: BarChart3 },
-  { name: "System Design", progress: 43, modules: 18, icon: Shield },
-  { name: "Database Design", progress: 28, modules: 28, icon: Sparkles },
-];
-
-// ─── Horizontal Scroll Component with Smooth Animation ───
-function HorizontalScroll({ children }: { children: React.ReactNode }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ["start end", "end start"],
-  });
-
-  // Use a spring animation for smoother movement
-  const smoothProgress = useSpring(scrollYProgress, {
-    stiffness: 80,    // Lower = smoother but slower
-    damping: 25,      // Higher = less bounce
-    mass: 0.8,        // Lower = faster response
-    restDelta: 0.001  // When to stop animating
-  });
-
-  const x = useTransform(smoothProgress, [0, 1], ["10%", "-30%"]);
-
-  return (
-    <div ref={containerRef} className="overflow-hidden">
-      <motion.div
-        style={{ x }}
-        className="flex gap-6 py-8"
-      >
-        {children}
-      </motion.div>
-    </div>
-  );
-}
-export default function ArcticFrostV1() {
+export default function SprintIoPage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: containerRef });
   const heroY = useTransform(scrollYProgress, [0, 0.3], [0, -120]);
   const bgY = useTransform(scrollYProgress, [0, 1], [0, -200]);
 
-  // Add spring for smooth progress bar animation
-  const scaleX = useSpring(scrollYProgress, {
-    stiffness: 100,
-    damping: 30,
-    restDelta: 0.001
-  });
+
   // ✅ FIX: Add state for snowflakes
   const [snowflakes, setSnowflakes] = useState<Array<{
     id: number;
@@ -140,53 +51,19 @@ export default function ArcticFrostV1() {
     setSnowflakes(flakes);
   }, []);
 
+
+  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [showResult, setShowResult] = useState(false);
+
+  const handleAnswer = (index: number) => {
+    setSelectedAnswer(index);
+    setTimeout(() => setShowResult(true), 500);
+  };
+
   return (
     <div ref={containerRef} className="min-h-screen bg-[hsl(210,25%,96%)] overflow-x-hidden">
 
-      {/* ─── SCROLL PROGRESS BAR ─── */}
-      <motion.div
-        style={{ scaleX }}
-        className="fixed top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[hsl(217,91%,60%)] via-[hsl(199,89%,48%)] to-[hsl(217,91%,60%)] z-[60] origin-left"
-      />
-      {/* ─── FLOATING NAV ─── */}
-      <motion.nav
-        style={{
-          opacity: useTransform(scrollYProgress, [0, 0.05, 0.1], [0, 0.5, 1]),
-          y: useTransform(scrollYProgress, [0, 0.05, 0.1], [-20, -10, 0]),
-          backgroundColor: useTransform(
-            scrollYProgress,
-            [0, 0.05, 0.1],
-            ['rgba(255,255,255,0)', 'rgba(255,255,255,0.4)', 'rgba(255,255,255,0.8)']
-          ),
-          backdropFilter: useTransform(
-            scrollYProgress,
-            [0, 0.05, 0.1],
-            ['blur(0px)', 'blur(4px)', 'blur(12px)']
-          ),
-          borderColor: useTransform(
-            scrollYProgress,
-            [0, 0.05, 0.1],
-            ['rgba(210,220,230,0)', 'rgba(210,220,230,0.3)', 'rgba(210,220,230,0.6)']
-          )
-        }}
-        className="fixed top-0 left-0 right-0 z-50 border-b shadow-lg pointer-events-none"
-      >
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between pointer-events-auto">
-          <div className="flex items-center gap-2">
-            <Snowflake className="text-[hsl(217,91%,60%)]" size={20} />
-            <span className="font-bold text-[hsl(215,25%,15%)]">Arctic Sprint</span>
-          </div>
-          <div className="hidden md:flex items-center gap-8 text-sm text-[hsl(215,15%,45%)]">
-            <a href="#features" className="hover:text-[hsl(217,91%,60%)] transition-colors">Features</a>
-            <a href="#paths" className="hover:text-[hsl(217,91%,60%)] transition-colors">Paths</a>
-            <a href="#leaderboard" className="hover:text-[hsl(217,91%,60%)] transition-colors">Leaderboard</a>
-            <a href="#testimonials" className="hover:text-[hsl(217,91%,60%)] transition-colors">Reviews</a>
-          </div>
-          <button className="bg-[hsl(217,91%,60%)] text-white text-sm px-4 py-2 rounded-lg font-medium hover:bg-[hsl(217,91%,55%)] transition-colors">
-            Start Sprint
-          </button>
-        </div>
-      </motion.nav>
+
       {/* Snowfall particles - FIXED */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         {snowflakes.map((flake) => (
@@ -204,6 +81,7 @@ export default function ArcticFrostV1() {
           </div>
         ))}
       </div>
+
 
       {/* ─── HERO ─── */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-15">
@@ -260,22 +138,7 @@ export default function ArcticFrostV1() {
           <div className="w-16 h-16 bg-white/60 backdrop-blur-xl border border-[hsl(210,20%,88%,0.5)] rounded-xl rotate-12 shadow-[inset_0_0_0_1px_hsl(217,91%,60%,0.15)]" />
         </motion.div>
       </section>
-      {/* ─── STATS BAR ─── */}
-      <section className="relative z-10 py-8">
-        <div className="max-w-5xl mx-auto px-6">
-          <motion.div
-            initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }}
-            className="bg-white/80 backdrop-blur-2xl border border-[hsl(210,20%,88%,0.6)] shadow-xl rounded-2xl p-8 grid grid-cols-2 md:grid-cols-4 gap-8"
-          >
-            {stats.map((stat, i) => (
-              <motion.div key={stat.label} variants={fadeUp} custom={i} className="text-center">
-                <div className="text-3xl md:text-4xl font-black text-[hsl(217,91%,60%)] mb-1">{stat.value}</div>
-                <div className="text-sm font-semibold text-[hsl(215,15%,45%)]">{stat.label}</div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
+
       {/* ─── FEATURES ─── */}
       <section id="features" className="relative z-10 py-24">
         <div className="max-w-6xl mx-auto px-6">
@@ -331,50 +194,9 @@ export default function ArcticFrostV1() {
 
 
 
-      {/* ─── SKILL PATHS (Choose Your Path) ─── */}
-      <section id="paths" className="relative z-10 py-24">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-12">
-            <p className="text-xs uppercase tracking-[0.3em] text-[hsl(217,91%,60%)] font-bold mb-4">Learning Tracks</p>
-            <h2 className="text-5xl md:text-6xl font-bold text-[hsl(215,25%,15%)]">
-              Choose Your <span className="bg-clip-text text-transparent bg-gradient-to-r from-[hsl(217,91%,60%)] via-[hsl(199,89%,48%)] to-[hsl(217,91%,60%)] font-extrabold">Path</span>
-            </h2>
-          </div>
-        </div>
-
-        <HorizontalScroll>
-          {[...skillPaths, ...skillPaths].map((path, i) => (
-            <motion.div
-              key={`${path.name}-${i}`}
-              whileHover={{ y: -10, scale: 1.03 }}
-              className="min-w-[320px] bg-white/60 backdrop-blur-xl border border-[hsl(210,20%,88%,0.5)] shadow-lg rounded-3xl p-8 shadow-[inset_0_0_0_1px_hsl(217,91%,60%,0.15)] cursor-pointer group"
-            >
-              <div className="w-14 h-14 rounded-2xl bg-[hsl(217,91%,60%,0.1)] flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <path.icon className="text-[hsl(217,91%,60%)]" size={24} />
-              </div>
-              <h3 className="text-xl font-bold text-[hsl(215,25%,15%)] mb-2">{path.name}</h3>
-              <p className="text-sm text-[hsl(215,15%,45%)] mb-1 font-semibold">{path.modules} Modules</p>
-              <div className="mt-6">
-                <div className="flex justify-between text-xs mb-2">
-                  <span className="text-[hsl(215,15%,45%)] font-semibold">Progress</span>
-                  <span className="text-[hsl(217,91%,60%)] font-extrabold">{path.progress}%</span>
-                </div>
-                <div className="h-2 bg-[hsl(210,20%,90%)] rounded-full overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    whileInView={{ width: `${path.progress}%` }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 1.2, delay: 0.3 + (i % 4) * 0.15, ease: "easeOut" }}
-                    className="h-full bg-gradient-to-r from-[hsl(217,91%,60%)] to-[hsl(199,89%,48%)] rounded-full"
-                  />
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </HorizontalScroll>
-      </section>
-
-
+      <HowItWorks />
+      <SkillPath />
+      <SprintDemo />
 
 
 
@@ -456,7 +278,22 @@ export default function ArcticFrostV1() {
           </div>
         </div>
       </section>
-
+      {/* ─── STATS BAR ─── */}
+      <section className="relative z-10 py-8">
+        <div className="max-w-5xl mx-auto px-6">
+          <motion.div
+            initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }}
+            className="bg-white/80 backdrop-blur-2xl border border-[hsl(210,20%,88%,0.6)] shadow-xl rounded-2xl p-8 grid grid-cols-2 md:grid-cols-4 gap-8"
+          >
+            {stats.map((stat, i) => (
+              <motion.div key={stat.label} variants={fadeUp} custom={i} className="text-center">
+                <div className="text-3xl md:text-4xl font-black text-[hsl(217,91%,60%)] mb-1">{stat.value}</div>
+                <div className="text-sm font-semibold text-[hsl(215,15%,45%)]">{stat.label}</div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
       {/* ─── CTA ─── */}
 
       <section className="relative z-10 py-24">
@@ -483,48 +320,6 @@ export default function ArcticFrostV1() {
         </div>
       </section>
 
-      {/* ─── FOOTER ─── */}
-      <footer className="relative z-10 border-t border-border py-20">
-        <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-16">
-          <div className="grid md:grid-cols-4 gap-12 mb-12">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <Snowflake className="text-primary" size={22} />
-                <span className="text-xl font-bold text-foreground">Arctic Sprint</span>
-              </div>
-              <p className="text-sm text-muted-foreground leading-relaxed font-medium">
-                The world&apos;s most engaging gamified learning platform.
-              </p>
-            </div>
-            {[
-              { title: "Product", links: ["Features", "Pricing", "Paths", "API"] },
-              { title: "Company", links: ["About", "Blog", "Careers", "Press"] },
-              { title: "Connect", links: ["Twitter", "Discord", "GitHub", "Contact"] },
-            ].map((col) => (
-              <div key={col.title}>
-                <p className="font-bold text-foreground text-sm mb-4">{col.title}</p>
-                <ul className="space-y-3">
-                  {col.links.map((link) => (
-                    <li key={link}>
-                      <a href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors font-medium">
-                        {link}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-          <div className="border-t border-border/30 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-xs text-muted-foreground font-medium">© 2026 Arctic Sprint. All rights reserved.</p>
-            <div className="flex gap-6 text-xs text-muted-foreground font-medium">
-              <a href="#" className="hover:text-primary transition-colors">Privacy</a>
-              <a href="#" className="hover:text-primary transition-colors">Terms</a>
-              <a href="#" className="hover:text-primary transition-colors">Cookies</a>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

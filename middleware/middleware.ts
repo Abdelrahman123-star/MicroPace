@@ -5,21 +5,29 @@ import { connectDB } from "../lib/mongodb"
 import { User } from "@/models/User"
 
 export async function requireAuth() {
+    const user = await getAuthUser()
+    if (!user) redirect("/")
+    return user
+}
+
+export async function getAuthUser() {
     const cookieStore = await cookies()
     const token = cookieStore.get("token")?.value
 
-    if (!token) redirect("/")
+    if (!token) return null
 
     let payload: any
     try {
         payload = verifyToken(token)
     } catch (err) {
-        redirect("/")
+        return null
     }
 
     await connectDB()
-    const user = await User.findById(payload.id).select("-password")
-    if (!user) redirect("/")
-
-    return user
+    try {
+        const user = await User.findById(payload.id).select("-password")
+        return user || null
+    } catch (err) {
+        return null
+    }
 }

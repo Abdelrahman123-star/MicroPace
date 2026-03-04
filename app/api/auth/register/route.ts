@@ -14,7 +14,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ message: "Missing fields" }, { status: 400 })
         }
 
-        // Check if user Email excists
+        // Check if user Email exists
         const existingUser = await User.findOne({
             $or: [{ email }, { username }],
         })
