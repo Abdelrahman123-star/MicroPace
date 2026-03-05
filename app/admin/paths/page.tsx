@@ -9,13 +9,14 @@ export default async function AdminPathsPage() {
     // get unique categories
     const categories = Array.from(new Set(paths.map((p: any) => p.category || "General")));
 
-    // Serialize Object Ids
-    const serializedPaths = paths.map((p: any) => ({
-        ...p,
-        _id: p._id.toString(),
-        createdAt: p.createdAt?.toISOString() || null,
-        updatedAt: p.updatedAt?.toISOString() || null,
-    }));
+    // // Serialize Object Ids
+    // const serializedPaths = paths.map((p: any) => ({
+    //     ...p,
+    //     _id: p._id.toString(),
+    //     createdAt: p.createdAt?.toISOString() || null,
+    //     updatedAt: p.updatedAt?.toISOString() || null,
+    // }));
+    const serializedPaths = JSON.parse(JSON.stringify(paths));
 
     return <PathsClientPage initialPaths={serializedPaths} categories={categories as string[]} />;
 }

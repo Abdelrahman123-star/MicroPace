@@ -1,18 +1,30 @@
 import Link from "next/link";
 import { connectDB } from "@/lib/mongodb";
 import { Path } from "@/models/Path";
-import { ArrowLeft, Sparkles, ArrowRight, FolderOpen, Search } from "lucide-react";
+import { Sprint } from "@/models/Sprint";
+import { ArrowLeft, Sparkles, ArrowRight, FolderOpen, Search, Zap, Layers } from "lucide-react";
 
 export default async function PathsPage() {
     await connectDB();
 
     const paths = await Path.find().lean();
+    const sprints = await Sprint.find().lean();
+
+    // Calculate stats per path
+    const pathStats = sprints.reduce((acc: any, sprint: any) => {
+        const pId = sprint.pathId.toString();
+        if (!acc[pId]) acc[pId] = { count: 0, totalXP: 0 };
+        acc[pId].count += 1;
+        acc[pId].totalXP += sprint.xpReward || 0;
+        return acc;
+    }, {});
 
     // Group paths by category
     const categorizedPaths = paths.reduce((acc: any, path: any) => {
         const cat = path.category || "General";
         if (!acc[cat]) acc[cat] = [];
-        acc[cat].push(path);
+        const stats = pathStats[path._id.toString()] || { count: 0, totalXP: 0 };
+        acc[cat].push({ ...path, stats });
         return acc;
     }, {});
 
@@ -79,16 +91,29 @@ export default async function PathsPage() {
                                                 <div className="text-4xl filter drop-shadow-sm bg-[hsl(217,91%,60%,0.1)] w-14 h-14 rounded-xl flex items-center justify-center">
                                                     {path.icon || "📘"}
                                                 </div>
-                                                <div className="w-8 h-8 rounded-full bg-[hsl(210,20%,96%)] flex items-center justify-center group-hover:bg-[hsl(217,91%,60%,0.1)] transition-colors">
-                                                    <ArrowRight size={16} className="text-[hsl(215,15%,45%)] group-hover:text-[hsl(217,91%,60%)]" />
+                                                <div className="flex flex-col items-end gap-2">
+                                                    <div className="w-8 h-8 rounded-full bg-[hsl(210,20%,96%)] flex items-center justify-center group-hover:bg-[hsl(217,91%,60%,0.1)] transition-colors">
+                                                        <ArrowRight size={16} className="text-[hsl(215,15%,45%)] group-hover:text-[hsl(217,91%,60%)]" />
+                                                    </div>
                                                 </div>
                                             </div>
                                             <h3 className="text-xl font-bold text-[hsl(215,25%,15%)] mb-2 group-hover:text-[hsl(217,91%,60%)] transition-colors">
                                                 {path.name}
                                             </h3>
-                                            <p className="text-[hsl(215,15%,45%)] font-medium leading-relaxed flex-1">
+                                            <p className="text-[hsl(215,15%,45%)] font-medium leading-relaxed mb-6">
                                                 {path.description}
                                             </p>
+
+                                            <div className="mt-auto flex items-center gap-4 pt-4 border-t border-[hsl(210,20%,88%,0.5)]">
+                                                <div className="flex items-center gap-1.5 text-sm font-bold text-[hsl(215,25%,15%)]">
+                                                    <Layers size={14} className="text-[hsl(217,91%,60%)]" />
+                                                    {path.stats.count} Sprints
+                                                </div>
+                                                <div className="flex items-center gap-1.5 text-sm font-bold text-[hsl(215,25%,15%)]">
+                                                    <Zap size={14} className="text-[hsl(45,91%,60%)] fill-[hsl(45,91%,60%)]" />
+                                                    {path.stats.totalXP} TOTAL XP
+                                                </div>
+                                            </div>
                                         </Link>
                                     ))}
                                 </div>

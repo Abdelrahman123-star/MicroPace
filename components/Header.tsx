@@ -3,8 +3,8 @@
 import { motion, useScroll, useSpring, useTransform, AnimatePresence } from "framer-motion";
 import Link from 'next/link';
 import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { User, LogOut, LayoutDashboard, Settings } from "lucide-react";
+import { useRouter, usePathname } from "next/navigation";
+import { User, LogOut, LayoutDashboard, Settings, Menu, X, ChevronRight } from "lucide-react";
 
 export function Header({ user }: { user: any }) {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -30,6 +30,9 @@ export function Header({ user }: { user: any }) {
         router.refresh(); // Ensure layout refetches user
     };
 
+    const pathname = usePathname();
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
     // SCROLL PROGRESS BAR
     const scaleX = useSpring(scrollYProgress, {
         stiffness: 100,
@@ -45,6 +48,19 @@ export function Header({ user }: { user: any }) {
     const navBorder = useTransform(scrollY, [0, 20], ['rgba(210,220,230,0)', 'rgba(210,220,230,0.6)']);
 
     const userInitial = (user?.username || user?.name || "?").charAt(0).toUpperCase();
+
+    const navLinks = [
+        { name: "dashboard", href: "/dashboard", isHash: false },
+        { name: "Paths", href: "/paths", isHash: false },
+        { name: "Leaderboard", href: "/#leaderboard", isHash: true },
+        { name: "Reviews", href: "/#testimonials", isHash: true },
+    ];
+
+    const getHref = (link: { href: string; isHash: boolean }) => {
+        if (!link.isHash) return link.href;
+        if (pathname === "/") return link.href.split("/")[1]; // returns #features
+        return link.href;
+    };
 
     return (
         <>
@@ -69,10 +85,15 @@ export function Header({ user }: { user: any }) {
                     </Link>
 
                     <div className="hidden md:flex items-center gap-8 text-sm text-[hsl(215,15%,45%)]">
-                        <a href="#features" className="hover:text-[hsl(217,91%,60%)] transition-colors">Features</a>
-                        <a href="#paths" className="hover:text-[hsl(217,91%,60%)] transition-colors">Paths</a>
-                        <a href="#leaderboard" className="hover:text-[hsl(217,91%,60%)] transition-colors">Leaderboard</a>
-                        <a href="#testimonials" className="hover:text-[hsl(217,91%,60%)] transition-colors">Reviews</a>
+                        {navLinks.map((link) => (
+                            <Link
+                                key={link.name}
+                                href={getHref(link)}
+                                className="hover:text-[hsl(217,91%,60%)] transition-colors font-medium"
+                            >
+                                {link.name}
+                            </Link>
+                        ))}
                     </div>
 
                     <div className="flex items-center gap-4">
@@ -115,10 +136,6 @@ export function Header({ user }: { user: any }) {
                                                     <User size={16} />
                                                     Profile
                                                 </Link>
-                                                <Link href="/settings" onClick={() => setIsDropdownOpen(false)} className="flex items-center gap-3 px-3 py-2 text-sm text-[hsl(215,25%,15%)] hover:bg-[hsl(217,91%,60%,0.08)] hover:text-[hsl(217,91%,60%)] rounded-lg transition-colors font-medium">
-                                                    <Settings size={16} />
-                                                    Settings
-                                                </Link>
                                             </div>
                                             <div className="p-1 border-t border-[hsl(210,20%,88%,0.4)]">
                                                 <button
@@ -134,7 +151,7 @@ export function Header({ user }: { user: any }) {
                                 </AnimatePresence>
                             </div>
                         ) : (
-                            <div className="flex items-center gap-3">
+                            <div className="hidden md:flex items-center gap-3">
                                 <Link
                                     href="/login"
                                     className="text-[0.9rem] font-semibold text-[hsl(215,15%,45%)] hover:text-[hsl(217,91%,60%)] transition-colors"
@@ -149,8 +166,72 @@ export function Header({ user }: { user: any }) {
                                 </Link>
                             </div>
                         )}
+
+                        {/* Mobile Menu Toggle */}
+                        <button
+                            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                            className="md:hidden p-2 text-[hsl(215,25%,15%)] hover:bg-[hsl(210,20%,94%)] rounded-lg transition-colors"
+                        >
+                            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+                        </button>
                     </div>
                 </div>
+
+                {/* Mobile Menu Overlay */}
+                <AnimatePresence>
+                    {isMobileMenuOpen && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="md:hidden bg-white border-t border-[hsl(210,20%,88%,0.4)] overflow-hidden"
+                        >
+                            <div className="px-4 py-6 space-y-4">
+                                {navLinks.map((link) => (
+                                    <Link
+                                        key={link.name}
+                                        href={getHref(link)}
+                                        onClick={() => setIsMobileMenuOpen(false)}
+                                        className="flex items-center justify-between p-3 rounded-xl hover:bg-[hsl(217,91%,60%,0.05)] text-[hsl(215,25%,15%)] font-semibold transition-colors"
+                                    >
+                                        {link.name}
+                                        <ChevronRight size={18} className="text-[hsl(215,15%,45%)]" />
+                                    </Link>
+                                ))}
+
+                                {user && (
+                                    <Link
+                                        href="/dashboard"
+                                        onClick={() => setIsMobileMenuOpen(false)}
+                                        className="flex items-center justify-between p-3 rounded-xl bg-[hsl(217,91%,60%)] text-white font-bold transition-shadow shadow-lg shadow-[hsl(217,91%,60%,0.2)]"
+                                    >
+                                        Dashboard
+                                        <LayoutDashboard size={18} />
+                                    </Link>
+                                )}
+
+                                {!user && (
+                                    <div className="grid grid-cols-2 gap-3 pt-2">
+                                        <Link
+                                            href="/login"
+                                            onClick={() => setIsMobileMenuOpen(false)}
+                                            className="flex items-center justify-center p-3 rounded-xl border border-[hsl(210,20%,88%)] text-[hsl(215,25%,15%)] font-semibold transition-colors hover:bg-[hsl(210,20%,96%)]"
+                                        >
+                                            Login
+                                        </Link>
+                                        <Link
+                                            href="/register"
+                                            onClick={() => setIsMobileMenuOpen(false)}
+                                            className="flex items-center justify-center p-3 rounded-xl bg-[hsl(217,91%,60%)] text-white font-bold transition-shadow shadow-lg shadow-[hsl(217,91%,60%,0.2)]"
+                                        >
+                                            Join Now
+                                        </Link>
+                                    </div>
+                                )}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </motion.nav>
         </>
     );

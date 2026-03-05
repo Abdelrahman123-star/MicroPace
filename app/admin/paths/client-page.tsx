@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { createPath, updatePath, deletePath } from "./actions";
 import { Trash2, Edit, Plus, X } from "lucide-react";
 
@@ -49,7 +50,8 @@ export default function PathsClientPage({ initialPaths, categories }: { initialP
                 await updatePath(formData._id, formData);
                 setPaths(paths.map(p => (p._id === formData._id ? formData : p)));
             } else {
-                const newId = await createPath(formData);
+                const { _id, ...dataToPost } = formData;
+                const newId = await createPath(dataToPost);
                 setPaths([...paths, { ...formData, _id: newId }]);
             }
             setIsModalOpen(false);
@@ -105,6 +107,13 @@ export default function PathsClientPage({ initialPaths, categories }: { initialP
                                     </td>
                                     <td className="p-4 text-right">
                                         <div className="flex items-center justify-end gap-2">
+                                            <Link
+                                                href={`/admin/paths/${p._id}/sprints`}
+                                                className="p-2 text-[hsl(217,91%,60%)] bg-[hsl(217,91%,60%,0.1)] hover:bg-[hsl(217,91%,60%,0.2)] rounded-lg transition-colors text-sm font-bold flex items-center gap-2"
+                                                title="Manage Sprints"
+                                            >
+                                                Sprints
+                                            </Link>
                                             <button
                                                 onClick={() => handleOpenEdit(p)}
                                                 className="p-2 text-[hsl(215,15%,45%)] hover:bg-[hsl(210,20%,90%)] rounded-lg transition-colors"

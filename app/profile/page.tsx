@@ -2,6 +2,7 @@ import { requireAuth } from "@/middleware/middleware";
 import { Path } from "@/models/Path";
 import { Sparkles, Flame, Trophy, Star, Shield, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import StreakWarning from "@/components/StreakWarning";
 
 export default async function ProfilePage() {
     // 1. Authenticate user
@@ -23,6 +24,9 @@ export default async function ProfilePage() {
             </div>
 
             <div className="relative z-10 max-w-5xl mx-auto px-6">
+
+                {/* Streak Warning */}
+                <StreakWarning lastSprintDate={user.lastSprintDate ? new Date(user.lastSprintDate).toISOString() : undefined} currentStreak={user.currentStreak} />
 
                 {/* Header Section */}
                 <div className="text-center mb-16">

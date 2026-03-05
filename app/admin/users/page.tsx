@@ -7,13 +7,7 @@ export default async function AdminUsersPage() {
     const users = await User.find().select("-password").lean();
 
     // Serialize object IDs
-    const serializedUsers = users.map((u: any) => ({
-        ...u,
-        _id: u._id.toString(),
-        createdAt: u.createdAt?.toISOString() || null,
-        updatedAt: u.updatedAt?.toISOString() || null,
-        lastSprintDate: u.lastSprintDate?.toISOString() || null,
-    }));
+    const serializedUsers = JSON.parse(JSON.stringify(users));
 
     return (
         <div>

@@ -1,0 +1,517 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { createSprint, updateSprint, deleteSprint } from "./actions";
+import { Trash2, Edit, Plus, X, ArrowLeft, GripVertical, Code } from "lucide-react";
+
+export default function SprintsClientPage({ targetPath, initialSprints }: { targetPath: any, initialSprints: any[] }) {
+    const [sprints, setSprints] = useState(initialSprints);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [loading, setLoading] = useState(false);
+
+    // Initial empty state for a new sprint
+    const [formData, setFormData] = useState<any>({
+        _id: "",
+        title: "",
+        slug: "",
+        lessonContent: "",
+        codeSnippet: "",
+        codeLanguage: "bash",
+        xpReward: 10,
+        order: sprints.length + 1,
+        questions: []
+    });
+
+    const handleOpenCreate = () => {
+        setFormData({
+            _id: "",
+            title: "",
+            slug: "",
+            lessonContent: "",
+            codeSnippet: "",
+            codeLanguage: "bash",
+            xpReward: 10,
+            order: sprints.length + 1,
+            questions: []
+        });
+        setIsModalOpen(true);
+    };
+
+    const handleOpenEdit = (sprint: any) => {
+        // Ensure legacy sprints without questions array don't crash the UI
+        setFormData({
+            ...sprint,
+            questions: sprint.questions || [],
+            codeSnippet: sprint.codeSnippet || "",
+            codeLanguage: sprint.codeLanguage || "bash",
+        });
+        setIsModalOpen(true);
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!confirm("Are you sure you want to delete this sprint?")) return;
+        setLoading(true);
+        try {
+            await deleteSprint(id);
+            setSprints(sprints.filter(s => s._id !== id));
+        } catch (error) {
+            console.error("Failed to delete sprint", error);
+            alert("Failed to delete sprint");
+        }
+        setLoading(false);
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+
+        try {
+            // Clean up empty questions before submitting
+            const cleanedData = {
+                ...formData,
+                questions: formData.questions.filter((q: any) => q.question.trim() !== "")
+            };
+
+            if (formData._id) {
+                await updateSprint(formData._id, cleanedData);
+                setSprints(sprints.map(s => (s._id === formData._id ? cleanedData : s)));
+            } else {
+                const { _id, ...dataToPost } = cleanedData;
+                const newId = await createSprint(targetPath._id, dataToPost);
+                setSprints([...sprints, { ...cleanedData, _id: newId }]);
+            }
+            setIsModalOpen(false);
+        } catch (error) {
+            console.error("Failed to save sprint", error);
+            alert("Failed to save sprint. Check your inputs.");
+        }
+        setLoading(false);
+    };
+
+    // --- Dynamic Questions Management ---
+
+    const addQuestion = (type: "mcq" | "fill_in_blanks" | "ordering") => {
+        const newQuestion: any = { type, question: "" };
+
+        if (type === "mcq") {
+            newQuestion.options = ["", ""];
+            newQuestion.correctAnswerIndex = 0;
+        } else if (type === "fill_in_blanks") {
+            newQuestion.blanks = [];
+            newQuestion.draggables = [];
+        } else if (type === "ordering") {
+            newQuestion.itemsToOrder = [""];
+        }
+
+        setFormData({ ...formData, questions: [...formData.questions, newQuestion] });
+    };
+
+    const updateQuestion = (index: number, field: string, value: any) => {
+        const newQuestions = [...formData.questions];
+        newQuestions[index][field] = value;
+        setFormData({ ...formData, questions: newQuestions });
+    };
+
+    const removeQuestion = (index: number) => {
+        const newQuestions = formData.questions.filter((_: any, i: number) => i !== index);
+        setFormData({ ...formData, questions: newQuestions });
+    };
+
+    // --- Array field helpers for MCQ options, Draggables, etc ---
+    const updateArrayField = (qIndex: number, fieldName: string, itemIndex: number, value: string) => {
+        const newQuestions = [...formData.questions];
+        newQuestions[qIndex][fieldName][itemIndex] = value;
+        setFormData({ ...formData, questions: newQuestions });
+    };
+
+    const addArrayItem = (qIndex: number, fieldName: string) => {
+        const newQuestions = [...formData.questions];
+        newQuestions[qIndex][fieldName].push("");
+        setFormData({ ...formData, questions: newQuestions });
+    }
+
+    const removeArrayItem = (qIndex: number, fieldName: string, itemIndex: number) => {
+        const newQuestions = [...formData.questions];
+        newQuestions[qIndex][fieldName] = newQuestions[qIndex][fieldName].filter((_: any, i: number) => i !== itemIndex);
+        setFormData({ ...formData, questions: newQuestions });
+    }
+
+    return (
+        <div>
+            {/* Header Area */}
+            <div className="mb-4">
+                <Link href="/admin/paths" className="inline-flex items-center gap-2 text-sm text-[hsl(215,15%,45%)] hover:text-[hsl(217,91%,60%)] transition-colors mb-4 font-bold">
+                    <ArrowLeft size={16} /> Back to paths
+                </Link>
+            </div>
+
+            <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold text-[hsl(215,25%,15%)] mb-2 inline-flex items-center gap-3">
+                        <span className="text-4xl">{targetPath.icon}</span>
+                        {targetPath.name} Sprints
+                    </h1>
+                    <p className="text-[hsl(215,15%,45%)] font-medium">Manage learning modules and questions for this path.</p>
+                </div>
+                <button
+                    onClick={handleOpenCreate}
+                    className="bg-[hsl(217,91%,60%)] text-white px-5 py-2.5 rounded-xl font-bold hover:bg-[hsl(217,91%,55%)] transition-colors inline-flex items-center gap-2 shadow-[0_0_20px_hsl(217,91%,60%,0.2)]"
+                >
+                    <Plus size={18} /> New Sprint
+                </button>
+            </div>
+
+            {/* Sprints Table */}
+            <div className="bg-white border border-[hsl(210,20%,88%)] rounded-2xl overflow-hidden shadow-sm">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-[hsl(210,25%,96%)] border-b border-[hsl(210,20%,88%)]">
+                                <th className="p-4 font-bold text-[hsl(215,25%,15%)] w-16 text-center">Order</th>
+                                <th className="p-4 font-bold text-[hsl(215,25%,15%)]">Sprint Title</th>
+                                <th className="p-4 font-bold text-[hsl(215,25%,15%)]">Questions</th>
+                                <th className="p-4 font-bold text-[hsl(215,25%,15%)]">XP Reward</th>
+                                <th className="p-4 font-bold text-[hsl(215,25%,15%)] text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[hsl(210,20%,88%)]">
+                            {sprints.map((s) => (
+                                <tr key={s._id} className="hover:bg-[hsl(210,25%,98%)] transition-colors">
+                                    <td className="p-4 text-center font-bold text-[hsl(215,15%,45%)]">{s.order}</td>
+                                    <td className="p-4">
+                                        <div className="font-bold text-[hsl(215,25%,15%)]">{s.title}</div>
+                                        <div className="text-xs text-[hsl(215,15%,45%)] font-mono truncate max-w-[200px]">{s.slug}</div>
+                                    </td>
+                                    <td className="p-4">
+                                        <span className="inline-block bg-[hsl(210,20%,90%)] text-[hsl(215,15%,45%)] px-3 py-1 rounded-full text-xs font-bold">
+                                            {s.questions?.length || 0} items
+                                        </span>
+                                        {s.codeSnippet && <span title="Contains Code Snippet"><Code size={14} className="inline-block ml-2 text-[hsl(215,15%,45%)]" /></span>}
+                                    </td>
+                                    <td className="p-4 font-bold text-[hsl(217,91%,60%)]">
+                                        +{s.xpReward} XP
+                                    </td>
+                                    <td className="p-4 text-right">
+                                        <div className="flex items-center justify-end gap-2">
+                                            <button
+                                                onClick={() => handleOpenEdit(s)}
+                                                className="p-2 text-[hsl(215,15%,45%)] hover:bg-[hsl(210,20%,90%)] rounded-lg transition-colors"
+                                                title="Edit Sprint"
+                                            >
+                                                <Edit size={18} />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(s._id)}
+                                                disabled={loading}
+                                                className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                                                title="Delete Sprint"
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                            {sprints.length === 0 && (
+                                <tr>
+                                    <td colSpan={5} className="p-8 text-center text-[hsl(215,15%,45%)]">
+                                        No sprints found in this path.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {/* Modal for Create/Edit */}
+            {isModalOpen && (
+                <div className="fixed inset-0 z-50 flex flex-col items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsModalOpen(false)}></div>
+                    <div className="relative bg-[hsl(210,25%,98%)] border border-[hsl(210,20%,88%)] rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+
+                        <div className="flex items-center justify-between p-6 border-b border-[hsl(210,20%,88%)] bg-white">
+                            <h2 className="text-xl font-bold text-[hsl(215,25%,15%)]">
+                                {formData._id ? "Edit Sprint" : "Create New Sprint"}
+                            </h2>
+                            <button onClick={() => setIsModalOpen(false)} className="text-[hsl(215,15%,45%)] hover:text-black hover:bg-[hsl(210,20%,94%)] p-2 rounded-lg transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+                            <form id="sprint-form" onSubmit={handleSubmit} className="space-y-8">
+
+                                {/* Core Info Section */}
+                                <div className="bg-white p-6 rounded-2xl border border-[hsl(210,20%,88%)] shadow-sm space-y-4">
+                                    <h3 className="font-bold text-[hsl(215,25%,15%)] text-lg mb-4 flex items-center gap-2">Core Details</h3>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-bold text-[hsl(215,15%,45%)] mb-1">Title</label>
+                                            <input
+                                                type="text"
+                                                required
+                                                className="w-full border border-[hsl(210,20%,88%)] rounded-xl p-3 bg-[hsl(210,25%,98%)] focus:outline-none focus:ring-2 focus:ring-[hsl(217,91%,60%)] font-medium"
+                                                value={formData.title}
+                                                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-bold text-[hsl(215,15%,45%)] mb-1">Slug (URL)</label>
+                                            <input
+                                                type="text"
+                                                required
+                                                className="w-full border border-[hsl(210,20%,88%)] rounded-xl p-3 bg-[hsl(210,25%,98%)] focus:outline-none focus:ring-2 focus:ring-[hsl(217,91%,60%)] font-mono text-sm"
+                                                value={formData.slug}
+                                                onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-bold text-[hsl(215,15%,45%)] mb-1">XP Reward</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                required
+                                                className="w-full border border-[hsl(210,20%,88%)] rounded-xl p-3 bg-[hsl(210,25%,98%)] focus:outline-none focus:ring-2 focus:ring-[hsl(217,91%,60%)] font-medium"
+                                                value={formData.xpReward}
+                                                onChange={(e) => setFormData({ ...formData, xpReward: parseInt(e.target.value) || 0 })}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-bold text-[hsl(215,15%,45%)] mb-1">Order</label>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                required
+                                                className="w-full border border-[hsl(210,20%,88%)] rounded-xl p-3 bg-[hsl(210,25%,98%)] focus:outline-none focus:ring-2 focus:ring-[hsl(217,91%,60%)] font-medium"
+                                                value={formData.order}
+                                                onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) || 1 })}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-bold text-[hsl(215,15%,45%)] mb-1">Lesson Content (Markdown)</label>
+                                        <textarea
+                                            required
+                                            rows={4}
+                                            className="w-full border border-[hsl(210,20%,88%)] rounded-xl p-3 bg-[hsl(210,25%,98%)] focus:outline-none focus:ring-2 focus:ring-[hsl(217,91%,60%)] resize-none font-medium"
+                                            value={formData.lessonContent}
+                                            onChange={(e) => setFormData({ ...formData, lessonContent: e.target.value })}
+                                        />
+                                    </div>
+
+                                    <div className="pt-2">
+                                        <label className="block text-sm font-bold text-[hsl(215,15%,45%)] mb-1 flex items-center gap-2">
+                                            <Code size={16} /> Optional Code Snippet (Terminal UI)
+                                        </label>
+                                        <div className="flex gap-2 mb-2">
+                                            <input
+                                                type="text"
+                                                placeholder="Language (e.g. bash, javascript)"
+                                                className="w-1/3 border border-[hsl(210,20%,88%)] rounded-xl p-3 bg-[hsl(210,25%,98%)] focus:outline-none focus:ring-2 focus:ring-[hsl(217,91%,60%)] font-mono text-xs"
+                                                value={formData.codeLanguage || ""}
+                                                onChange={(e) => setFormData({ ...formData, codeLanguage: e.target.value })}
+                                            />
+                                        </div>
+                                        <textarea
+                                            rows={4}
+                                            placeholder="Code content here..."
+                                            className="w-full border border-[hsl(210,20%,88%)] rounded-xl p-3 bg-[#1e1e1e] text-[#d4d4d4] focus:outline-none focus:ring-2 focus:ring-[hsl(217,91%,60%)] font-mono text-sm resize-none"
+                                            value={formData.codeSnippet || ""}
+                                            onChange={(e) => setFormData({ ...formData, codeSnippet: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Questions Section */}
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="font-bold text-[hsl(215,25%,15%)] text-xl">Questions</h3>
+                                        <div className="flex gap-2">
+                                            <button type="button" onClick={() => addQuestion("mcq")} className="text-xs bg-white border border-[hsl(210,20%,88%)] px-3 py-1.5 rounded-lg hover:bg-[hsl(210,20%,94%)] font-bold transition-colors">
+                                                + MCQ
+                                            </button>
+                                            <button type="button" onClick={() => addQuestion("fill_in_blanks")} className="text-xs bg-white border border-[hsl(210,20%,88%)] px-3 py-1.5 rounded-lg hover:bg-[hsl(210,20%,94%)] font-bold transition-colors">
+                                                + Blanks
+                                            </button>
+                                            <button type="button" onClick={() => addQuestion("ordering")} className="text-xs bg-white border border-[hsl(210,20%,88%)] px-3 py-1.5 rounded-lg hover:bg-[hsl(210,20%,94%)] font-bold transition-colors">
+                                                + Ordering
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {formData.questions.map((q: any, qIndex: number) => (
+                                        <div key={qIndex} className="bg-white p-5 rounded-2xl border-2 border-[hsl(210,20%,88%)] shadow-sm relative">
+
+                                            <button
+                                                type="button"
+                                                onClick={() => removeQuestion(qIndex)}
+                                                className="absolute top-4 right-4 text-[hsl(215,15%,45%)] hover:text-red-500 hover:bg-red-50 p-1.5 rounded-md transition-colors"
+                                            >
+                                                <X size={16} />
+                                            </button>
+
+                                            <div className="mb-4 pr-8">
+                                                <span className="inline-block px-2.5 py-1 bg-[hsl(210,25%,96%)] text-[hsl(215,25%,15%)] rounded-md text-xs font-bold uppercase tracking-wider mb-2 border border-[hsl(210,20%,88%)]">
+                                                    {q.type.replace(/_/g, " ")}
+                                                </span>
+                                                <label className="block text-sm font-bold text-[hsl(215,15%,45%)] mb-1">Question Prompt</label>
+                                                <input
+                                                    type="text"
+                                                    required
+                                                    placeholder="Enter question text..."
+                                                    className="w-full border border-[hsl(210,20%,88%)] rounded-xl p-3 bg-[hsl(210,25%,98%)] focus:outline-none focus:ring-2 focus:ring-[hsl(217,91%,60%)] font-medium"
+                                                    value={q.question}
+                                                    onChange={(e) => updateQuestion(qIndex, "question", e.target.value)}
+                                                />
+                                            </div>
+
+                                            {/* MCQ Specific Fields */}
+                                            {q.type === "mcq" && (
+                                                <div className="space-y-3 bg-[hsl(210,25%,98%)] p-4 rounded-xl border border-[hsl(210,20%,92%)]">
+                                                    <label className="block text-sm font-bold text-[hsl(215,15%,45%)]">Options</label>
+                                                    {q.options?.map((opt: string, optIndex: number) => (
+                                                        <div key={optIndex} className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                                                            <div className="flexitems-center gap-2 shrink-0">
+                                                                <input
+                                                                    type="radio"
+                                                                    name={`correct-answer-${qIndex}`}
+                                                                    checked={q.correctAnswerIndex === optIndex}
+                                                                    onChange={() => updateQuestion(qIndex, "correctAnswerIndex", optIndex)}
+                                                                    className="w-4 h-4 text-[hsl(217,91%,60%)]"
+                                                                />
+                                                                <span className="text-xs text-[hsl(215,15%,45%)] font-bold">Answer {optIndex + 1}</span>
+                                                            </div>
+                                                            <div className="flex-1 flex w-full">
+                                                                <input
+                                                                    type="text"
+                                                                    required
+                                                                    className="w-full border border-[hsl(210,20%,88%)] rounded-l-lg p-2 focus:outline-none focus:ring-2 focus:ring-[hsl(217,91%,60%)] text-sm"
+                                                                    value={opt}
+                                                                    onChange={(e) => updateArrayField(qIndex, "options", optIndex, e.target.value)}
+                                                                />
+                                                                <button type="button" onClick={() => removeArrayItem(qIndex, "options", optIndex)} className="px-3 border border-l-0 border-[hsl(210,20%,88%)] rounded-r-lg bg-white text-red-500 hover:bg-red-50">
+                                                                    <X size={14} />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                    <button type="button" onClick={() => addArrayItem(qIndex, "options")} className="text-sm text-[hsl(217,91%,60%)] font-bold hover:underline">
+                                                        + Add Option
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            {/* Fill in Blanks Specific Fields */}
+                                            {q.type === "fill_in_blanks" && (
+                                                <div className="space-y-4 bg-[hsl(210,25%,98%)] p-4 rounded-xl border border-[hsl(210,20%,92%)]">
+                                                    <p className="text-xs text-[hsl(215,15%,45%)] bg-[hsl(210,20%,94%)] p-2 rounded max-w-lg mb-2">
+                                                        Note: Use <strong className="text-[hsl(215,25%,15%)]">{"{{blank}}"}</strong> in the Question Prompt above to indicate drop zones.
+                                                    </p>
+
+                                                    {/* Blanks array (Correct answers in order) */}
+                                                    <div>
+                                                        <label className="block text-sm font-bold text-[hsl(215,25%,15%)] mb-1">Correct Answers (in order of blanks)</label>
+                                                        <div className="space-y-2">
+                                                            {q.blanks?.map((blank: string, bIndex: number) => (
+                                                                <div key={bIndex} className="flex w-full sm:w-2/3">
+                                                                    <span className="bg-green-100 text-green-700 font-bold px-3 py-2 rounded-l-lg border border-r-0 border-green-200 text-sm">#{bIndex + 1}</span>
+                                                                    <input type="text" value={blank} onChange={(e) => updateArrayField(qIndex, "blanks", bIndex, e.target.value)} required className="flex-1 border border-[hsl(210,20%,88%)] p-2 focus:outline-none text-sm" />
+                                                                    <button type="button" onClick={() => removeArrayItem(qIndex, "blanks", bIndex)} className="px-3 border border-l-0 border-[hsl(210,20%,88%)] rounded-r-lg bg-white text-red-500 hover:bg-red-50">
+                                                                        <X size={14} />
+                                                                    </button>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                        <button type="button" onClick={() => addArrayItem(qIndex, "blanks")} className="text-sm text-green-600 mt-2 font-bold hover:underline">+ Add Correct Answer Link</button>
+                                                    </div>
+
+                                                    {/* Draggables pool (Correct answers + distractors) */}
+                                                    <div>
+                                                        <label className="block text-sm font-bold text-[hsl(215,25%,15%)] mb-1">Word Pool (Draggable buttons)</label>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {q.draggables?.map((drag: string, dIndex: number) => (
+                                                                <div key={dIndex} className="flex relative">
+                                                                    <input type="text" value={drag} onChange={(e) => updateArrayField(qIndex, "draggables", dIndex, e.target.value)} required placeholder="word" className="border border-[hsl(210,20%,88%)] rounded-lg pl-3 pr-8 py-1.5 focus:outline-none focus:border-[hsl(217,91%,60%)] w-28 text-sm font-mono" />
+                                                                    <button type="button" onClick={() => removeArrayItem(qIndex, "draggables", dIndex)} className="absolute right-2 top-1/2 -translate-y-1/2 text-red-500 p-0.5 hover:bg-red-50 rounded">
+                                                                        <X size={12} />
+                                                                    </button>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                        <button type="button" onClick={() => addArrayItem(qIndex, "draggables")} className="text-sm text-[hsl(217,91%,60%)] mt-2 font-bold hover:underline">+ Add Word to Pool</button>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Ordering Specific Fields */}
+                                            {q.type === "ordering" && (
+                                                <div className="space-y-3 bg-[hsl(210,25%,98%)] p-4 rounded-xl border border-[hsl(210,20%,92%)]">
+                                                    <label className="block text-sm font-bold text-[hsl(215,15%,45%)]">Items to Order (Add them in the CORRECT order)</label>
+                                                    {q.itemsToOrder?.map((item: string, iIndex: number) => (
+                                                        <div key={iIndex} className="flex items-center gap-2">
+                                                            <div className="bg-white border border-[hsl(210,20%,88%)] p-2 rounded-lg text-[hsl(215,15%,45%)] shadow-sm">
+                                                                <GripVertical size={16} />
+                                                            </div>
+                                                            <span className="font-mono text-xs text-[hsl(215,15%,45%)] font-bold">{iIndex + 1}.</span>
+                                                            <div className="flex-1 flex">
+                                                                <input
+                                                                    type="text"
+                                                                    required
+                                                                    className="w-full border border-[hsl(210,20%,88%)] rounded-l-lg p-2 focus:outline-none focus:ring-2 focus:ring-[hsl(217,91%,60%)] text-sm font-mono"
+                                                                    value={item}
+                                                                    onChange={(e) => updateArrayField(qIndex, "itemsToOrder", iIndex, e.target.value)}
+                                                                />
+                                                                <button type="button" onClick={() => removeArrayItem(qIndex, "itemsToOrder", iIndex)} className="px-3 border border-l-0 border-[hsl(210,20%,88%)] rounded-r-lg bg-white text-red-500 hover:bg-red-50">
+                                                                    <X size={14} />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                    <button type="button" onClick={() => addArrayItem(qIndex, "itemsToOrder")} className="text-sm text-[hsl(217,91%,60%)] font-bold hover:underline">
+                                                        + Add Item
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+
+                                    {formData.questions.length === 0 && (
+                                        <div className="text-center p-8 border-2 border-dashed border-[hsl(210,20%,88%)] rounded-2xl text-[hsl(215,15%,45%)]">
+                                            No questions added yet. Sprints should have at least one question.
+                                        </div>
+                                    )}
+                                </div>
+                            </form>
+                        </div>
+
+                        <div className="p-6 border-t border-[hsl(210,20%,88%)] bg-[hsl(210,25%,98%)] flex justify-end gap-3 shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => setIsModalOpen(false)}
+                                className="px-6 py-2.5 rounded-xl text-[hsl(215,25%,15%)] font-bold hover:bg-[hsl(210,20%,94%)] transition-colors border border-[hsl(210,20%,88%)]"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                form="sprint-form"
+                                disabled={loading}
+                                className="bg-[hsl(217,91%,60%)] text-white px-8 py-2.5 rounded-xl font-bold hover:bg-[hsl(217,91%,55%)] transition-all disabled:opacity-50 shadow-[0_0_20px_hsl(217,91%,60%,0.2)]"
+                            >
+                                {loading ? "Saving..." : "Save Sprint"}
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}

@@ -3,6 +3,7 @@ import { connectDB } from "@/lib/mongodb"
 import { Path } from "@/models/Path"
 import { Sprint } from "@/models/Sprint"
 import SprintStepper from "./SprintStepper"
+import { requireAuth } from "@/middleware/middleware";
 
 interface Props {
     params: Promise<{ slug: string; sprintSlug: string }>
@@ -10,7 +11,7 @@ interface Props {
 
 export default async function SprintPage({ params }: Props) {
     const { slug, sprintSlug } = await params
-
+    const user = await requireAuth();
     await connectDB()
 
     // find path
@@ -33,9 +34,9 @@ export default async function SprintPage({ params }: Props) {
             pathId={path._id.toString()}
             pathSlug={slug}
             lessonContent={sprint.lessonContent}
-            mcqQuestion={sprint.mcqQuestion}
-            mcqOptions={sprint.mcqOptions}
-            correctAnswerIndex={sprint.correctAnswerIndex}
+            codeSnippet={sprint.codeSnippet}
+            codeLanguage={sprint.codeLanguage}
+            questions={JSON.parse(JSON.stringify(sprint.questions || []))}
             xpReward={sprint.xpReward}
             nextSprintSlug={nextSprint?.slug}
             nextSprintTitle={nextSprint?.title}

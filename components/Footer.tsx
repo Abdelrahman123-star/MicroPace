@@ -1,4 +1,4 @@
-
+import Link from "next/link";
 
 
 export function Footer() {
@@ -6,7 +6,7 @@ export function Footer() {
     return (
         <section>
             {/* ─── FOOTER ─── */}
-            <footer className="relative z-10 border-t border-border py-20">
+            <footer className="border-t border-border py-20">
                 <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-16">
                     <div className="grid md:grid-cols-4 gap-12 mb-12">
                         <div>
@@ -18,18 +18,29 @@ export function Footer() {
                             </p>
                         </div>
                         {[
-                            { title: "Product", links: ["Features", "Pricing", "Paths", "API"] },
-                            { title: "Company", links: ["About", "Blog", "Careers", "Press"] },
-                            { title: "Connect", links: ["Twitter", "Discord", "GitHub", "Contact"] },
+                            {
+                                title: "Product",
+                                links: [
+                                    { name: "Features", href: "/#features" },
+                                    { name: "Paths", href: "/paths" },
+                                    { name: "Leaderboard", href: "/#leaderboard" },
+                                    { name: "Reviews", href: "/#testimonials" }
+                                ]
+                            },
+                            { title: "Company", links: [{ name: "About", href: "/#how-it-works" }, { name: "Blog", href: "#" }, { name: "Press", href: "#" }] },
+                            { title: "Connect", links: [{ name: "Twitter", href: "#" }, { name: "Discord", href: "#" }, { name: "GitHub", href: "#" }, { name: "Contact", href: "#" }] },
                         ].map((col) => (
                             <div key={col.title}>
                                 <p className="font-bold text-foreground text-sm mb-4">{col.title}</p>
                                 <ul className="space-y-3">
                                     {col.links.map((link) => (
-                                        <li key={link}>
-                                            <a href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors font-medium">
-                                                {link}
-                                            </a>
+                                        <li key={typeof link === 'string' ? link : link.name}>
+                                            <Link
+                                                href={typeof link === 'string' ? "#" : link.href}
+                                                className="text-sm text-muted-foreground hover:text-primary transition-colors font-medium"
+                                            >
+                                                {typeof link === 'string' ? link : link.name}
+                                            </Link>
                                         </li>
                                     ))}
                                 </ul>

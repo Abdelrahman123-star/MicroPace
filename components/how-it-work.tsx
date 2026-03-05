@@ -62,7 +62,7 @@ export function HowItWorks() {
                     <h2 className="text-5xl md:text-7xl font-bold text-black mb-6">
                         Your learning journey
                         <br />
-                        <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                        <span className="bg-gradient-to-r from-[hsl(217,91%,60%)] via-[hsl(199,89%,48%)] to-[hsl(217,91%,60%)] bg-clip-text text-transparent">
                             in four simple steps
                         </span>
                     </h2>
@@ -86,7 +86,7 @@ export function HowItWorks() {
                                     viewport={{ once: true }}
                                     transition={{ duration: 0.6, delay: 0.2 }}
                                 >
-                                    <div className="text-8xl font-bold bg-gradient-to-br from-purple-600 to-blue-600 bg-clip-text text-transparent mb-4">
+                                    <div className="text-8xl font-bold bg-gradient-to-br from-[hsl(217,91%,60%)] via-[hsl(199,89%,48%)] to-[hsl(217,91%,60%)] bg-clip-text text-transparent mb-4">
                                         {step.number}
                                     </div>
                                     <h3 className="text-4xl md:text-5xl font-bold text-black mb-4">

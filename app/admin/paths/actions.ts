@@ -16,7 +16,12 @@ async function checkAdmin() {
 export async function createPath(data: any) {
     await checkAdmin();
     await connectDB();
-    const path = await Path.create(data);
+
+    // Safeguard: remove _id if it's an empty string to avoid "Cast to ObjectId failed"
+    const { _id, ...pathData } = data;
+    const finalData = _id ? data : pathData;
+
+    const path = await Path.create(finalData);
     revalidatePath("/admin/paths");
     revalidatePath("/paths");
     return path._id.toString();

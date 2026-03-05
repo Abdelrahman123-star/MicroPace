@@ -7,6 +7,7 @@ import {
     Flame, Sparkles, Trophy, Clock, PlayCircle, Star, Target, CheckCircle2
 } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
+import StreakWarning from "@/components/StreakWarning";
 
 export default async function DashboardPage() {
     const user = await requireAuth();
@@ -67,6 +68,9 @@ export default async function DashboardPage() {
             </div>
 
             <div className="relative z-10 max-w-6xl mx-auto px-6">
+
+                {/* Streak Warning */}
+                <StreakWarning lastSprintDate={user.lastSprintDate ? new Date(user.lastSprintDate).toISOString() : undefined} currentStreak={user.currentStreak} />
 
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">

@@ -6,7 +6,7 @@ import { User } from "@/models/User"
 
 export async function requireAuth() {
     const user = await getAuthUser()
-    if (!user) redirect("/")
+    if (!user) redirect("/login")
     return user
 }
 
