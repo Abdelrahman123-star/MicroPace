@@ -8,6 +8,10 @@ import { getAuthUser } from "@/middleware/middleware";
 export const metadata: Metadata = {
   title: "Sprint.Io",
   description: "Learn with interactive sprints and skill paths",
+  verification: {
+    google: "bBIKHFQElDrqLtG4o8FUxAdzgi0V_WwJf3ktuoKPhIw",
+  },
+
 };
 
 export default async function RootLayout({
