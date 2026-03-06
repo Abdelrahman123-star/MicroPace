@@ -53,6 +53,39 @@ function shuffleArray<T>(array: T[]): T[] {
     return arr;
 }
 
+function formatContent(text: string) {
+    if (!text) return text;
+    const keywords = ["int", "float", "str", "bool"];
+    const regex = new RegExp(`(\\b(?:${keywords.join("|")})\\b|\\*\\*.*?\\*\\*|\\\`.*?\\\`)`, "gi");
+
+    const parts = text.split(regex);
+
+    return parts.map((part, i) => {
+        if (!part) return null;
+        if (part.startsWith("**") && part.endsWith("**")) {
+            return <strong key={i} style={{ color: "#fff", fontWeight: 800 }}>{part.slice(2, -2)}</strong>;
+        }
+        if (part.startsWith("`") && part.endsWith("`")) {
+            return (
+                <code key={i} style={{
+                    background: "rgba(255,255,255,0.12)",
+                    padding: "2px 6px",
+                    borderRadius: "4px",
+                    fontFamily: "'Fira Code', monospace",
+                    fontSize: "0.9em",
+                    color: "#a78bfa"
+                }}>
+                    {part.slice(1, -1)}
+                </code>
+            );
+        }
+        if (keywords.includes(part.toLowerCase())) {
+            return <strong key={i} style={{ color: "#fff", fontWeight: 800 }}>{part}</strong>;
+        }
+        return part;
+    });
+}
+
 export default function SprintStepper({
     lessonContent,
     codeSnippet,
@@ -518,7 +551,7 @@ export default function SprintStepper({
                                 whiteSpace: "pre-line",
                                 minHeight: storyContext ? 120 : 180,
                             }}>
-                                {lessonContent}
+                                {formatContent(lessonContent)}
                             </div>
 
                             {codeSnippet && (

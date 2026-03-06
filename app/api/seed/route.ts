@@ -12,9 +12,9 @@ export async function GET() {
   try {
     await connectDB();
 
-    // 1. Wipe existing data
-    await Path.deleteMany({});
-    await Sprint.deleteMany({});
+    // // 1. Wipe existing data
+    // await Path.deleteMany({});
+    // await Sprint.deleteMany({});
 
     const paths = getDataAnalystPaths();
 
