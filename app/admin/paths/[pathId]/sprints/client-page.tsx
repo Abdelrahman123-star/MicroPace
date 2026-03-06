@@ -3,12 +3,14 @@
 import { useState } from "react";
 import Link from "next/link";
 import { createSprint, updateSprint, deleteSprint } from "./actions";
-import { Trash2, Edit, Plus, X, ArrowLeft, GripVertical, Code } from "lucide-react";
+import { Trash2, Edit, Plus, X, ArrowLeft, GripVertical, Code, BookOpen, Sparkles, Users, Eye, ChevronDown, ChevronUp } from "lucide-react";
 
 export default function SprintsClientPage({ targetPath, initialSprints }: { targetPath: any, initialSprints: any[] }) {
     const [sprints, setSprints] = useState(initialSprints);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [storySectionExpanded, setStorySectionExpanded] = useState(false);
+    const [previewMode, setPreviewMode] = useState(false);
 
     // Initial empty state for a new sprint
     const [formData, setFormData] = useState<any>({
@@ -20,7 +22,10 @@ export default function SprintsClientPage({ targetPath, initialSprints }: { targ
         codeLanguage: "bash",
         xpReward: 10,
         order: sprints.length + 1,
-        questions: []
+        questions: [],
+        storyContext: "",
+        completionStory: "",
+        characters: []
     });
 
     const handleOpenCreate = () => {
@@ -33,19 +38,26 @@ export default function SprintsClientPage({ targetPath, initialSprints }: { targ
             codeLanguage: "bash",
             xpReward: 10,
             order: sprints.length + 1,
-            questions: []
+            questions: [],
+            storyContext: "",
+            completionStory: "",
+            characters: []
         });
         setIsModalOpen(true);
     };
 
     const handleOpenEdit = (sprint: any) => {
-        // Ensure legacy sprints without questions array don't crash the UI
+        const hasExisting = Boolean(sprint.storyContext || sprint.completionStory || (sprint.characters?.length > 0));
         setFormData({
             ...sprint,
             questions: sprint.questions || [],
             codeSnippet: sprint.codeSnippet || "",
             codeLanguage: sprint.codeLanguage || "bash",
+            storyContext: sprint.storyContext || "",
+            completionStory: sprint.completionStory || "",
+            characters: sprint.characters || [],
         });
+        setStorySectionExpanded(!!hasExisting);
         setIsModalOpen(true);
     };
 
@@ -135,7 +147,26 @@ export default function SprintsClientPage({ targetPath, initialSprints }: { targ
         const newQuestions = [...formData.questions];
         newQuestions[qIndex][fieldName] = newQuestions[qIndex][fieldName].filter((_: any, i: number) => i !== itemIndex);
         setFormData({ ...formData, questions: newQuestions });
-    }
+    };
+
+    // Characters array helpers for optional story fields
+    const addCharacter = () => {
+        setFormData({ ...formData, characters: [...(formData.characters || []), ""] });
+    };
+    const updateCharacter = (index: number, value: string) => {
+        const chars = [...(formData.characters || [])];
+        chars[index] = value;
+        setFormData({ ...formData, characters: chars });
+    };
+    const removeCharacter = (index: number) => {
+        setFormData({ ...formData, characters: (formData.characters || []).filter((_: string, i: number) => i !== index) });
+    };
+
+    const hasStoryFields = Boolean(
+        (formData.storyContext || "").trim() ||
+        (formData.completionStory || "").trim() ||
+        ((formData.characters || []).length > 0 && (formData.characters || []).some((c: string) => c.trim()))
+    );
 
     return (
         <div>
@@ -235,13 +266,59 @@ export default function SprintsClientPage({ targetPath, initialSprints }: { targ
                             <h2 className="text-xl font-bold text-[hsl(215,25%,15%)]">
                                 {formData._id ? "Edit Sprint" : "Create New Sprint"}
                             </h2>
-                            <button onClick={() => setIsModalOpen(false)} className="text-[hsl(215,15%,45%)] hover:text-black hover:bg-[hsl(210,20%,94%)] p-2 rounded-lg transition-colors">
-                                <X size={20} />
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setPreviewMode(!previewMode)}
+                                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-colors ${previewMode ? "bg-[hsl(217,91%,60%)] text-white" : "bg-[hsl(210,20%,94%)] text-[hsl(215,15%,45%)] hover:bg-[hsl(210,20%,90%)]"}`}
+                                >
+                                    <Eye size={18} /> Preview
+                                </button>
+                                <button onClick={() => setIsModalOpen(false)} className="text-[hsl(215,15%,45%)] hover:text-black hover:bg-[hsl(210,20%,94%)] p-2 rounded-lg transition-colors">
+                                    <X size={20} />
+                                </button>
+                            </div>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
-                            <form id="sprint-form" onSubmit={handleSubmit} className="space-y-8">
+                        <div className="flex-1 overflow-y-auto p-6 custom-scrollbar flex gap-6">
+                            {previewMode && (
+                                <div className="w-[340px] shrink-0 rounded-2xl border-2 border-[hsl(217,91%,60%,0.3)] bg-gradient-to-b from-slate-900 to-slate-800 text-white overflow-hidden shadow-xl">
+                                    <div className="p-4 border-b border-white/10 bg-black/20">
+                                        <p className="text-xs font-bold uppercase tracking-wider text-amber-400">Learner Preview</p>
+                                        <p className="text-sm text-white/80">How this sprint appears to learners</p>
+                                    </div>
+                                    <div className="p-4 space-y-4 text-sm max-h-[400px] overflow-y-auto">
+                                        {formData.storyContext && (
+                                            <div className="rounded-xl bg-amber-500/15 border border-amber-400/30 p-3">
+                                                <p className="text-xs font-bold text-amber-400 mb-1">Story</p>
+                                                <p className="text-white/90 leading-relaxed">{formData.storyContext}</p>
+                                                {formData.characters?.filter(Boolean).length > 0 && (
+                                                    <p className="text-xs text-amber-300/80 mt-2">Characters: {formData.characters.filter(Boolean).join(", ")}</p>
+                                                )}
+                                            </div>
+                                        )}
+                                        <div className="rounded-xl bg-slate-700/50 p-3">
+                                            <p className="text-xs font-bold text-violet-400 mb-1">Lesson</p>
+                                            <p className="text-white/90 leading-relaxed whitespace-pre-line line-clamp-4">{formData.lessonContent || "Lesson content..."}</p>
+                                        </div>
+                                        {formData.codeSnippet && (
+                                            <div className="rounded-lg bg-[#1e1e1e] p-2 font-mono text-xs overflow-x-auto">
+                                                <code>{formData.codeSnippet.slice(0, 80)}{formData.codeSnippet.length > 80 ? "..." : ""}</code>
+                                            </div>
+                                        )}
+                                        <div className="flex items-center gap-2 text-amber-400">
+                                            <Sparkles size={14} /> +{formData.xpReward || 0} XP
+                                        </div>
+                                        {formData.completionStory && (
+                                            <div className="rounded-xl bg-emerald-500/15 border border-emerald-400/30 p-3">
+                                                <p className="text-xs font-bold text-emerald-400 mb-1">Completion</p>
+                                                <p className="text-white/90 leading-relaxed text-xs">{formData.completionStory}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                            <form id="sprint-form" onSubmit={handleSubmit} className={`space-y-8 ${previewMode ? "flex-1 min-w-0" : "flex-1"}`}>
 
                                 {/* Core Info Section */}
                                 <div className="bg-white p-6 rounded-2xl border border-[hsl(210,20%,88%)] shadow-sm space-y-4">
@@ -329,6 +406,70 @@ export default function SprintsClientPage({ targetPath, initialSprints }: { targ
                                     </div>
                                 </div>
 
+                                {/* Optional Story Fields */}
+                                <div className="bg-gradient-to-br from-amber-50/80 to-violet-50/60 p-6 rounded-2xl border-2 border-amber-200/60 shadow-sm">
+                                    <button
+                                        type="button"
+                                        onClick={() => setStorySectionExpanded(!storySectionExpanded)}
+                                        className="w-full flex items-center justify-between text-left"
+                                    >
+                                        <h3 className="font-bold text-[hsl(215,25%,15%)] text-lg flex items-center gap-2">
+                                            <Sparkles size={20} className="text-amber-500" /> Optional Story Fields
+                                            {hasStoryFields && (
+                                                <span className="text-xs font-normal px-2 py-0.5 rounded-full bg-amber-200/70 text-amber-800">Active</span>
+                                            )}
+                                        </h3>
+                                        {storySectionExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                                    </button>
+                                    <p className="text-sm text-[hsl(215,15%,45%)] mt-1">Enrich sprints with narrative context. Optional — sprints work without these.</p>
+                                    {storySectionExpanded && (
+                                        <div className="mt-6 space-y-5">
+                                            <div>
+                                                <label className="block text-sm font-bold text-[hsl(215,15%,45%)] mb-1 flex items-center gap-2"><BookOpen size={14} /> Story Context (1–3 sentences intro)</label>
+                                                <textarea
+                                                    rows={2}
+                                                    placeholder="e.g. Your boss asks you to store a user's age in the system."
+                                                    className="w-full border border-amber-200 rounded-xl p-3 bg-white/80 focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none text-sm"
+                                                    value={formData.storyContext || ""}
+                                                    onChange={(e) => setFormData({ ...formData, storyContext: e.target.value })}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-bold text-[hsl(215,15%,45%)] mb-1 flex items-center gap-2"><Sparkles size={14} /> Completion Story (1–3 sentences after finish)</label>
+                                                <textarea
+                                                    rows={2}
+                                                    placeholder="e.g. Great work! The system can now store user ages."
+                                                    className="w-full border border-amber-200 rounded-xl p-3 bg-white/80 focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none text-sm"
+                                                    value={formData.completionStory || ""}
+                                                    onChange={(e) => setFormData({ ...formData, completionStory: e.target.value })}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-bold text-[hsl(215,15%,45%)] mb-2 flex items-center gap-2"><Users size={14} /> Characters (boss, mentor, teammate, etc.)</label>
+                                                <div className="space-y-2">
+                                                    {(formData.characters || []).map((char: string, i: number) => (
+                                                        <div key={i} className="flex gap-2 items-center">
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Character name"
+                                                                className="flex-1 border border-amber-200 rounded-lg p-2 text-sm bg-white/80 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                                                                value={char}
+                                                                onChange={(e) => updateCharacter(i, e.target.value)}
+                                                            />
+                                                            <button type="button" onClick={() => removeCharacter(i)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
+                                                                <X size={14} />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                    <button type="button" onClick={addCharacter} className="text-sm text-amber-700 font-bold hover:underline flex items-center gap-1">
+                                                        + Add Character
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
                                 {/* Questions Section */}
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between">
@@ -378,7 +519,7 @@ export default function SprintsClientPage({ targetPath, initialSprints }: { targ
                                                     <label className="block text-sm font-bold text-[hsl(215,15%,45%)]">Options</label>
                                                     {q.options?.map((opt: string, optIndex: number) => (
                                                         <div key={optIndex} className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-                                                            <div className="flexitems-center gap-2 shrink-0">
+                                                            <div className="flex items-center gap-2 shrink-0">
                                                                 <input
                                                                     type="radio"
                                                                     name={`correct-answer-${qIndex}`}

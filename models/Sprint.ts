@@ -20,6 +20,10 @@ export interface ISprint {
     questions: IQuestion[]
     xpReward: number
     order: number
+    // Optional story-driven fields for narrative learning
+    storyContext?: string
+    completionStory?: string
+    characters?: string[]
 }
 
 const questionSchema = new Schema<IQuestion>({
@@ -47,6 +51,9 @@ const sprintSchema = new Schema<ISprint>(
         questions: { type: [questionSchema], required: true },
         xpReward: { type: Number, default: 10 },
         order: { type: Number, required: true },
+        storyContext: { type: String },
+        completionStory: { type: String },
+        characters: { type: [String] },
     },
     { timestamps: true }
 )

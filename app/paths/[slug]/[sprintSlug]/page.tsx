@@ -33,6 +33,7 @@ export default async function SprintPage({ params }: Props) {
             sprintId={sprint._id.toString()}
             pathId={path._id.toString()}
             pathSlug={slug}
+            sprintTitle={sprint.title}
             lessonContent={sprint.lessonContent}
             codeSnippet={sprint.codeSnippet}
             codeLanguage={sprint.codeLanguage}
@@ -40,6 +41,9 @@ export default async function SprintPage({ params }: Props) {
             xpReward={sprint.xpReward}
             nextSprintSlug={nextSprint?.slug}
             nextSprintTitle={nextSprint?.title}
+            storyContext={sprint.storyContext}
+            completionStory={sprint.completionStory}
+            characters={sprint.characters || []}
         />
     )
 }

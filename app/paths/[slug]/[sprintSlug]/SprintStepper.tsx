@@ -17,6 +17,7 @@ interface SprintStepperProps {
     sprintId: string
     pathId: string
     pathSlug: string
+    sprintTitle?: string
     xpReward: number
     lessonContent: string
     codeSnippet?: string
@@ -24,6 +25,9 @@ interface SprintStepperProps {
     questions: IQuestion[]
     nextSprintSlug?: string
     nextSprintTitle?: string
+    storyContext?: string
+    completionStory?: string
+    characters?: string[]
 }
 
 const STEPS = [
@@ -57,9 +61,13 @@ export default function SprintStepper({
     sprintId,
     pathId,
     pathSlug,
+    sprintTitle,
     xpReward,
     nextSprintSlug,
     nextSprintTitle,
+    storyContext,
+    completionStory,
+    characters = [],
 }: SprintStepperProps) {
     const router = useRouter()
 
@@ -438,29 +446,67 @@ export default function SprintStepper({
                         <div style={{
                             background: "linear-gradient(135deg, rgba(124,58,237,0.45), rgba(99,102,241,0.25))",
                             borderBottom: "1px solid rgba(255,255,255,0.07)",
-                            padding: "28px 36px 24px",
+                            padding: "24px 28px 28px",
                             display: "flex",
                             alignItems: "center",
+                            justifyContent: "space-between",
                             gap: 14,
+                            flexWrap: "wrap",
                         }}>
-                            <div style={{
-                                width: 44,
-                                height: 44,
-                                borderRadius: 12,
-                                background: "rgba(167,139,250,0.2)",
-                                border: "1px solid rgba(167,139,250,0.35)",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                fontSize: 22,
-                            }}>📖</div>
-                            <div>
-                                <p style={{ margin: 0, fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#a78bfa" }}>Sprint Lesson</p>
-                                <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "#fff" }}>Learning Content</h2>
+                            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                                <div style={{
+                                    width: 44,
+                                    height: 44,
+                                    borderRadius: 12,
+                                    background: "rgba(167,139,250,0.2)",
+                                    border: "1px solid rgba(167,139,250,0.35)",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    fontSize: 22,
+                                }}>📖</div>
+                                <div>
+                                    <p style={{ margin: 0, fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#a78bfa" }}>Sprint Lesson</p>
+                                    <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#fff" }}>{sprintTitle || "Learning Content"}</h2>
+                                </div>
+                            </div>
+                            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 99, background: "rgba(251,191,36,0.2)", border: "1px solid rgba(251,191,36,0.35)" }}>
+                                <span style={{ fontSize: 14 }}>⚡</span>
+                                <span style={{ fontSize: 14, fontWeight: 700, color: "#fbbf24" }}>+{xpReward} XP</span>
                             </div>
                         </div>
 
                         <div style={{ padding: "32px 36px" }}>
+                            {/* Story Context — narrative intro before lesson */}
+                            {storyContext && storyContext.trim() && (
+                                <div style={{
+                                    background: "linear-gradient(135deg, rgba(245,158,11,0.15), rgba(217,119,6,0.08))",
+                                    border: "1px solid rgba(245,158,11,0.3)",
+                                    borderRadius: 16,
+                                    padding: "24px 28px",
+                                    marginBottom: 28,
+                                    position: "relative",
+                                    overflow: "hidden",
+                                }}>
+                                    <div style={{ position: "absolute", top: 12, right: 16, fontSize: 20, opacity: 0.6 }}>📜</div>
+                                    <p style={{ margin: 0, fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#fbbf24", marginBottom: 10 }}>Story</p>
+                                    <p style={{ margin: 0, color: "rgba(255,255,255,0.92)", fontSize: 16, lineHeight: 1.7, fontStyle: "italic" }}>
+                                        {storyContext}
+                                    </p>
+                                    {characters.filter(Boolean).length > 0 && (
+                                        <div style={{ marginTop: 14, display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+                                            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", fontWeight: 600 }}>Characters:</span>
+                                            {characters.filter(Boolean).map((c, i) => (
+                                                <span key={i} style={{ background: "rgba(255,255,255,0.1)", padding: "4px 12px", borderRadius: 99, fontSize: 12, color: "#fbbf24", fontWeight: 600 }}>
+                                                    {c}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Lesson Content */}
                             <div style={{
                                 background: "rgba(255,255,255,0.03)",
                                 border: "1px solid rgba(255,255,255,0.07)",
@@ -470,7 +516,7 @@ export default function SprintStepper({
                                 fontSize: 15.5,
                                 lineHeight: 1.8,
                                 whiteSpace: "pre-line",
-                                minHeight: 180,
+                                minHeight: storyContext ? 120 : 180,
                             }}>
                                 {lessonContent}
                             </div>
@@ -840,8 +886,8 @@ export default function SprintStepper({
 
                 {/* STEP 2 - Reward */}
                 {activeStep === 2 && (
-                    <div style={{ padding: "60px 36px", textAlign: "center" }}>
-                        <div style={{ position: "relative", display: "inline-block", marginBottom: 32 }}>
+                    <div style={{ padding: "48px 36px 60px", textAlign: "center" }}>
+                        <div style={{ position: "relative", display: "inline-block", marginBottom: 28 }}>
                             <div style={{
                                 width: 110, height: 110, borderRadius: "50%",
                                 background: "linear-gradient(135deg, #fbbf24, #f59e0b, #d97706)",
@@ -854,13 +900,30 @@ export default function SprintStepper({
                         <h1 style={{ fontSize: 34, fontWeight: 800, margin: "0 0 12px 0", background: "linear-gradient(135deg, #fbbf24, #f59e0b, #fef3c7)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", animation: "fade-up 0.4s ease 0.1s both" }}>
                             Sprint Complete!
                         </h1>
-                        <p style={{ fontSize: 16, color: "rgba(255,255,255,0.55)", margin: "0 0 40px 0", lineHeight: 1.6, animation: "fade-up 0.4s ease 0.2s both" }}>
+                        <p style={{ fontSize: 16, color: "rgba(255,255,255,0.55)", margin: "0 0 28px 0", lineHeight: 1.6, animation: "fade-up 0.4s ease 0.2s both" }}>
                             You crushed it! All questions answered perfectly.<br />XP has been added to your streak.
                         </p>
 
-                        <div style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "14px 32px", borderRadius: 99, background: "linear-gradient(135deg, rgba(251,191,36,0.15), rgba(245,158,11,0.08))", border: "1.5px solid rgba(251,191,36,0.3)", marginBottom: 40, animation: "xp-pulse 0.6s ease 0.3s both" }}>
-                            <span style={{ fontSize: 22 }}>⚡</span>
-                            <span style={{ fontSize: 20, fontWeight: 800, color: "#fbbf24" }}>+{earnedXP > 0 ? xpCount : 0} XP</span>
+                        {/* Completion Story — narrative after success */}
+                        {completionStory && completionStory.trim() && (
+                            <div style={{
+                                maxWidth: 520, margin: "0 auto 32px",
+                                background: "linear-gradient(135deg, rgba(34,197,94,0.12), rgba(5,150,105,0.06))",
+                                border: "1px solid rgba(34,197,94,0.35)",
+                                borderRadius: 16,
+                                padding: "20px 24px",
+                                textAlign: "left",
+                                animation: "fade-up 0.5s ease 0.25s both",
+                            }}>
+                                <p style={{ margin: 0, fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#34d399", marginBottom: 8 }}>✨ Story</p>
+                                <p style={{ margin: 0, color: "rgba(255,255,255,0.9)", fontSize: 15, lineHeight: 1.65, fontStyle: "italic" }}>{completionStory}</p>
+                            </div>
+                        )}
+
+                        {/* XP Reward — highlighted with animation */}
+                        <div style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "16px 36px", borderRadius: 99, background: "linear-gradient(135deg, rgba(251,191,36,0.2), rgba(245,158,11,0.1))", border: "2px solid rgba(251,191,36,0.4)", marginBottom: 36, animation: "xp-pulse 0.6s ease 0.3s both", boxShadow: "0 8px 32px rgba(251,191,36,0.2)" }}>
+                            <span style={{ fontSize: 24, animation: "xp-glow 1.5s ease-in-out infinite" }}>⚡</span>
+                            <span style={{ fontSize: 22, fontWeight: 800, color: "#fbbf24" }}>+{earnedXP > 0 ? xpCount : 0} XP</span>
                             <span style={{ fontSize: 14, color: "rgba(255,255,255,0.5)", marginLeft: 4 }}>earned</span>
                         </div>
 
@@ -886,6 +949,26 @@ export default function SprintStepper({
                             ))}
                         </div>
 
+                        {/* Next Sprint Teaser */}
+                        {nextSprintSlug && nextSprintTitle && (
+                            <div style={{
+                                background: "linear-gradient(135deg, rgba(124,58,237,0.12), rgba(99,102,241,0.06))",
+                                border: "1px solid rgba(167,139,250,0.3)",
+                                borderRadius: 16,
+                                padding: "20px 24px",
+                                marginBottom: 32,
+                                maxWidth: 400,
+                                marginLeft: "auto",
+                                marginRight: "auto",
+                                textAlign: "left",
+                                animation: "fade-up 0.4s ease 0.4s both",
+                            }}>
+                                <p style={{ margin: 0, fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#a78bfa", marginBottom: 6 }}>Next Episode</p>
+                                <p style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#fff" }}>{nextSprintTitle}</p>
+                                <p style={{ margin: "8px 0 0", fontSize: 13, color: "rgba(255,255,255,0.55)" }}>Continue your journey →</p>
+                            </div>
+                        )}
+
                         <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", animation: "fade-up 0.4s ease 0.45s both" }}>
                             <button onClick={handleReviewLesson} style={{ padding: "14px 28px", background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.65)", border: "1.5px solid rgba(255,255,255,0.12)", borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: "pointer", transition: "all 0.2s" }}>
                                 📖 Review Lesson
@@ -910,6 +993,7 @@ export default function SprintStepper({
                 @keyframes slide-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
                 @keyframes streak-exit { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-30px); opacity: 0; } }
                 @keyframes streak-enter { 0% { transform: translateY(30px); opacity: 0; scale: 0.8; } 100% { transform: translateY(0); opacity: 1; scale: 1; } }
+                @keyframes xp-glow { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.4); } }
             `}</style>
         </div>
     )

@@ -21,12 +21,16 @@ export async function createSprint(pathId: string, data: any) {
 
 export async function updateSprint(id: string, data: any) {
     await connectDB();
-    const sprint = await Sprint.findByIdAndUpdate(id, data, { new: true });
+    const sprint = await Sprint.findByIdAndUpdate(id, data, {
+        returnDocument: 'after'
+    }).lean();
+
     if (sprint) {
         revalidatePath(`/admin/paths/${sprint.pathId}/sprints`);
         revalidatePath(`/paths/${sprint.pathId}`);
     }
-    return sprint;
+
+    return JSON.parse(JSON.stringify(sprint));
 }
 
 export async function deleteSprint(id: string) {

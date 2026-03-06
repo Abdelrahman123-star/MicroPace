@@ -2,19 +2,30 @@ import { requireAuth } from "@/middleware/middleware";
 import { connectDB } from "@/lib/mongodb";
 import { Path } from "@/models/Path";
 import { Sprint } from "@/models/Sprint";
+import { User } from "@/models/User";
 import Link from "next/link";
 import {
-    Flame, Sparkles, Trophy, Clock, PlayCircle, Star, Target, CheckCircle2
+    Flame, Sparkles, Trophy, Clock, PlayCircle, Star, Target, CheckCircle2, Zap, BookOpen, Award
 } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
 import StreakWarning from "@/components/StreakWarning";
+import { ACHIEVEMENTS, getAchievementById, checkAndGrantAchievements } from "@/lib/achievements";
+
+// Map icon names to components
+const IconMap: Record<string, any> = {
+    Flame, Sparkles, Trophy, Clock, PlayCircle, Star, Target, CheckCircle2, Zap, BookOpen, Award
+};
 
 export default async function DashboardPage() {
     const user = await requireAuth();
     await connectDB();
 
+    // 0. Check for new achievements
+    const updatedAchievements = await checkAndGrantAchievements(user, User);
+    const userWithAchievements = { ...user.toObject(), achievements: updatedAchievements };
+
     // 1. Fetch user active skills
-    const skills = user.skills || [];
+    const skills = userWithAchievements.skills || [];
 
     // 2. Prepare paths data user is working on
     const activePathsData = await Promise.all(skills.map(async (skill: any) => {
@@ -56,6 +67,12 @@ export default async function DashboardPage() {
         "Learning is a marathon made of little sprints."
     ];
     const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+
+    // 4. Get User Achievements
+    const userAchievements = (userWithAchievements.achievements || []).map((ua: any) => {
+        const data = getAchievementById(ua.id);
+        return data ? { ...data, unlockedAt: ua.unlockedAt } : null;
+    }).filter(Boolean).sort((a: any, b: any) => new Date(b.unlockedAt).getTime() - new Date(a.unlockedAt).getTime()).slice(0, 3); // Show top 3 newest
 
     return (
         <div className="min-h-screen bg-[hsl(210,25%,96%)] overflow-x-hidden pt-28 pb-24">
@@ -193,7 +210,14 @@ export default async function DashboardPage() {
                                             <div className="flex items-center justify-between mb-3">
                                                 <div className="flex items-center gap-3">
                                                     <div className="text-2xl">{p.path.icon || "📘"}</div>
-                                                    <h4 className="font-bold text-[hsl(215,25%,15%)] group-hover:text-[hsl(217,91%,60%)] transition-colors">{p.path.name}</h4>
+                                                    <div className="flex flex-col">
+                                                        <h4 className="font-bold text-[hsl(215,25%,15%)] group-hover:text-[hsl(217,91%,60%)] transition-colors">{p.path.name}</h4>
+                                                        {p.progressPercentage === 100 && (
+                                                            <span className="text-[10px] font-black uppercase tracking-wider text-green-600 bg-green-50 px-2 py-0.5 rounded-full w-fit flex items-center gap-1 mt-1">
+                                                                <CheckCircle2 size={10} /> Path Finished
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                                 <span className="text-sm font-bold text-[hsl(215,15%,45%)]">
                                                     {p.completedSprintsCount} / {p.totalSprints} Sprints
@@ -201,7 +225,7 @@ export default async function DashboardPage() {
                                             </div>
                                             <div className="h-2 bg-[hsl(210,20%,90%)] rounded-full overflow-hidden">
                                                 <div
-                                                    className="h-full bg-gradient-to-r from-[hsl(217,91%,60%)] to-[hsl(199,89%,48%)] rounded-full"
+                                                    className={`h-full ${p.progressPercentage === 100 ? 'bg-green-500' : 'bg-gradient-to-r from-[hsl(217,91%,60%)] to-[hsl(199,89%,48%)]'} rounded-full`}
                                                     style={{ width: `${p.progressPercentage}%` }}
                                                 />
                                             </div>
@@ -220,25 +244,36 @@ export default async function DashboardPage() {
                                 <Trophy className="text-yellow-500" size={18} /> Recent Achievements
                             </h3>
                             <div className="space-y-4">
-                                {/* Dummy achievements for visual flair per PRD request */}
-                                <div className="flex items-start gap-4 p-3 rounded-xl hover:bg-[hsl(210,20%,98%)] transition-colors">
-                                    <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center flex-shrink-0">
-                                        <Flame className="text-yellow-600" size={18} />
+                                {userAchievements.length > 0 ? (
+                                    userAchievements.map((achievement: any) => {
+                                        const IconComponent = IconMap[achievement.icon] || Trophy;
+                                        return (
+                                            <div key={achievement.id} className="flex items-start gap-4 p-3 rounded-xl hover:bg-[hsl(210,20%,98%)] transition-colors">
+                                                <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center flex-shrink-0">
+                                                    <IconComponent className="text-yellow-600" size={18} />
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-[hsl(215,25%,15%)] text-sm">{achievement.title}</p>
+                                                    <p className="text-xs text-[hsl(215,15%,45%)] font-medium">{achievement.description}</p>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                ) : (
+                                    <div className="text-center py-6">
+                                        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                            <Award className="text-gray-400" size={24} />
+                                        </div>
+                                        <p className="text-sm font-bold text-[hsl(215,25%,15%)]">No achievements yet</p>
+                                        <p className="text-xs text-[hsl(215,15%,45%)]">Keep sprinting to unlock rewards!</p>
                                     </div>
-                                    <div>
-                                        <p className="font-bold text-[hsl(215,25%,15%)] text-sm">3-Day Streak!</p>
-                                        <p className="text-xs text-[hsl(215,15%,45%)] font-medium">Keep hitting those daily goals.</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-start gap-4 p-3 rounded-xl hover:bg-[hsl(210,20%,98%)] transition-colors">
-                                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                                        <CheckCircle2 className="text-blue-600" size={18} />
-                                    </div>
-                                    <div>
-                                        <p className="font-bold text-[hsl(215,25%,15%)] text-sm">First Sprint Completed</p>
-                                        <p className="text-xs text-[hsl(215,15%,45%)] font-medium">The journey of a thousand miles begins...</p>
-                                    </div>
-                                </div>
+                                )}
+                            </div>
+                            <div className="mt-6 pt-4 border-t border-[hsl(210,20%,94%)]">
+                                <Link href="/achievements" className="text-sm font-bold text-[hsl(217,91%,60%)] hover:text-[hsl(217,91%,50%)] transition-colors flex items-center justify-center gap-1 group">
+                                    Show all Achievements
+                                    <span className="group-hover:translate-x-1 transition-transform">&rarr;</span>
+                                </Link>
                             </div>
                         </div>
 

@@ -14,6 +14,10 @@ export interface IUser {
         completedSprints: string[]
         xp: number
     }[]
+    achievements: {
+        id: string
+        unlockedAt: Date
+    }[]
 }
 
 const userSchema = new Schema<IUser>({
@@ -30,6 +34,12 @@ const userSchema = new Schema<IUser>({
             level: { type: Number, default: 1 },
             completedSprints: { type: [String], default: [] },
             xp: { type: Number, default: 0 },
+        },
+    ],
+    achievements: [
+        {
+            id: { type: String, required: true },
+            unlockedAt: { type: Date, default: Date.now },
         },
     ],
 }, { timestamps: true })
