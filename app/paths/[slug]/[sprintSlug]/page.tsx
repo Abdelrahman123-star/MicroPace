@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { notFound } from "next/navigation"
 import { connectDB } from "@/lib/mongodb"
 import { Path } from "@/models/Path"
@@ -44,6 +45,8 @@ export default async function SprintPage({ params }: Props) {
             storyContext={sprint.storyContext}
             completionStory={sprint.completionStory}
             characters={sprint.characters || []}
+            codeChallenge={sprint.codeChallenge ? JSON.parse(JSON.stringify(sprint.codeChallenge)) : undefined}
+            showCodePreview={!!sprint.showCodePreview}
         />
     )
 }

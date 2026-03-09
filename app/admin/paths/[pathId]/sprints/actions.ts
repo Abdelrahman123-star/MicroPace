@@ -42,3 +42,19 @@ export async function deleteSprint(id: string) {
     }
     return true;
 }
+
+export async function bulkCreateSprints(pathId: string, sprints: any[]) {
+    await connectDB();
+
+    const preparedSprints = sprints.map(s => ({
+        ...s,
+        pathId,
+        // Ensure _id is not an empty string
+        _id: (s._id === "" || !s._id) ? undefined : s._id
+    }));
+
+    const created = await Sprint.insertMany(preparedSprints);
+    revalidatePath(`/admin/paths/${pathId}/sprints`);
+    revalidatePath(`/paths/${pathId}`);
+    return created.length;
+}

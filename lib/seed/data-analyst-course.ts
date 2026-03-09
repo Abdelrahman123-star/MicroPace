@@ -28,6 +28,16 @@ interface SprintSeed {
     itemsToOrder?: string[];
     explanation?: string;
   }>;
+  codeChallenge?: {
+    initialHtml?: string
+    initialCss?: string
+    initialJs?: string
+    solutionHtml?: string
+    solutionCss?: string
+    solutionJs?: string
+    hint?: string
+    testCases?: { name: string; code: string }[]
+  }
 }
 
 export function getDataAnalystPaths() {

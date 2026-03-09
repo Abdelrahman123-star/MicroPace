@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { createSprint, updateSprint, deleteSprint } from "./actions";
-import { Trash2, Edit, Plus, X, ArrowLeft, GripVertical, Code, BookOpen, Sparkles, Users, Eye, ChevronDown, ChevronUp } from "lucide-react";
+import { createSprint, updateSprint, deleteSprint, bulkCreateSprints } from "./actions";
+import { Trash2, Edit, Plus, X, ArrowLeft, GripVertical, Code, BookOpen, Sparkles, Users, Eye, ChevronDown, ChevronUp, Database } from "lucide-react";
 
 export default function SprintsClientPage({ targetPath, initialSprints }: { targetPath: any, initialSprints: any[] }) {
     const [sprints, setSprints] = useState(initialSprints);
@@ -11,6 +11,10 @@ export default function SprintsClientPage({ targetPath, initialSprints }: { targ
     const [loading, setLoading] = useState(false);
     const [storySectionExpanded, setStorySectionExpanded] = useState(false);
     const [previewMode, setPreviewMode] = useState(false);
+    const [showSeedModal, setShowSeedModal] = useState(false);
+    const [seedJson, setSeedJson] = useState("");
+    const [codeSectionExpanded, setCodeSectionExpanded] = useState(false);
+
 
     // Initial empty state for a new sprint
     const [formData, setFormData] = useState<any>({
@@ -22,10 +26,21 @@ export default function SprintsClientPage({ targetPath, initialSprints }: { targ
         codeLanguage: "bash",
         xpReward: 10,
         order: sprints.length + 1,
+        showCodePreview: false,
         questions: [],
         storyContext: "",
         completionStory: "",
-        characters: []
+        characters: [],
+        codeChallenge: {
+            initialHtml: "",
+            initialCss: "",
+            initialJs: "",
+            solutionHtml: "",
+            solutionCss: "",
+            solutionJs: "",
+            hint: "",
+            instructions: ""
+        }
     });
 
     const handleOpenCreate = () => {
@@ -38,10 +53,20 @@ export default function SprintsClientPage({ targetPath, initialSprints }: { targ
             codeLanguage: "bash",
             xpReward: 10,
             order: sprints.length + 1,
+            showCodePreview: false,
             questions: [],
             storyContext: "",
             completionStory: "",
-            characters: []
+            characters: [],
+            codeChallenge: {
+                initialHtml: "",
+                initialCss: "",
+                initialJs: "",
+                solutionHtml: "",
+                solutionCss: "",
+                solutionJs: "",
+                hint: "",
+            }
         });
         setIsModalOpen(true);
     };
@@ -51,11 +76,21 @@ export default function SprintsClientPage({ targetPath, initialSprints }: { targ
         setFormData({
             ...sprint,
             questions: sprint.questions || [],
+            showCodePreview: sprint.showCodePreview || false,
             codeSnippet: sprint.codeSnippet || "",
             codeLanguage: sprint.codeLanguage || "bash",
             storyContext: sprint.storyContext || "",
             completionStory: sprint.completionStory || "",
             characters: sprint.characters || [],
+            codeChallenge: sprint.codeChallenge || {
+                initialHtml: "",
+                initialCss: "",
+                initialJs: "",
+                solutionHtml: "",
+                solutionCss: "",
+                solutionJs: "",
+                hint: "",
+            }
         });
         setStorySectionExpanded(!!hasExisting);
         setIsModalOpen(true);
@@ -101,9 +136,27 @@ export default function SprintsClientPage({ targetPath, initialSprints }: { targ
         setLoading(false);
     };
 
+    const handleSeedSubmit = async () => {
+        if (!seedJson.trim()) return;
+        setLoading(true);
+        try {
+            const parsed = JSON.parse(seedJson);
+            const sprintsArray = Array.isArray(parsed) ? parsed : [parsed];
+
+            await bulkCreateSprints(targetPath._id, sprintsArray);
+
+            // Refresh local state or just reload
+            window.location.reload();
+        } catch (error: any) {
+            console.error("Failed to seed sprints", error);
+            alert("Failed to seed. Invalid JSON structure: " + error.message);
+        }
+        setLoading(false);
+    };
+
     // --- Dynamic Questions Management ---
 
-    const addQuestion = (type: "mcq" | "fill_in_blanks" | "ordering") => {
+    const addQuestion = (type: "mcq" | "fill_in_blanks" | "ordering" | "replica") => {
         const newQuestion: any = { type, question: "" };
 
         if (type === "mcq") {
@@ -114,6 +167,11 @@ export default function SprintsClientPage({ targetPath, initialSprints }: { targ
             newQuestion.draggables = [];
         } else if (type === "ordering") {
             newQuestion.itemsToOrder = [""];
+        } else if (type === "replica") {
+            newQuestion.replicaHtml = "";
+            newQuestion.replicaCss = "";
+            newQuestion.initialHtml = "";
+            newQuestion.hint = "";
         }
 
         setFormData({ ...formData, questions: [...formData.questions, newQuestion] });
@@ -162,10 +220,29 @@ export default function SprintsClientPage({ targetPath, initialSprints }: { targ
         setFormData({ ...formData, characters: (formData.characters || []).filter((_: string, i: number) => i !== index) });
     };
 
+    // Code Challenge helpers
+    const updateCodeChallenge = (field: string, value: any) => {
+        setFormData({
+            ...formData,
+            codeChallenge: {
+                ...formData.codeChallenge,
+                [field]: value
+            }
+        });
+    };
+
+
+
     const hasStoryFields = Boolean(
         (formData.storyContext || "").trim() ||
         (formData.completionStory || "").trim() ||
         ((formData.characters || []).length > 0 && (formData.characters || []).some((c: string) => c.trim()))
+    );
+
+    const hasCodeChallenge = Boolean(
+        (formData.codeChallenge?.initialHtml || "").trim() ||
+        (formData.codeChallenge?.initialCss || "").trim() ||
+        (formData.codeChallenge?.initialJs || "").trim()
     );
 
     return (
@@ -185,12 +262,20 @@ export default function SprintsClientPage({ targetPath, initialSprints }: { targ
                     </h1>
                     <p className="text-[hsl(215,15%,45%)] font-medium">Manage learning modules and questions for this path.</p>
                 </div>
-                <button
-                    onClick={handleOpenCreate}
-                    className="bg-[hsl(217,91%,60%)] text-white px-5 py-2.5 rounded-xl font-bold hover:bg-[hsl(217,91%,55%)] transition-colors inline-flex items-center gap-2 shadow-[0_0_20px_hsl(217,91%,60%,0.2)]"
-                >
-                    <Plus size={18} /> New Sprint
-                </button>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => setShowSeedModal(true)}
+                        className="bg-white text-[hsl(215,25%,15%)] border border-[hsl(210,20%,88%)] px-5 py-2.5 rounded-xl font-bold hover:bg-[hsl(210,25%,96%)] transition-colors inline-flex items-center gap-2 shadow-sm"
+                    >
+                        <Database size={18} className="text-[hsl(217,91%,60%)]" /> Seed from JSON
+                    </button>
+                    <button
+                        onClick={handleOpenCreate}
+                        className="bg-[hsl(217,91%,60%)] text-white px-5 py-2.5 rounded-xl font-bold hover:bg-[hsl(217,91%,55%)] transition-colors inline-flex items-center gap-2 shadow-[0_0_20px_hsl(217,91%,60%,0.2)]"
+                    >
+                        <Plus size={18} /> New Sprint
+                    </button>
+                </div>
             </div>
 
             {/* Sprints Table */}
@@ -302,8 +387,25 @@ export default function SprintsClientPage({ targetPath, initialSprints }: { targ
                                             <p className="text-white/90 leading-relaxed whitespace-pre-line line-clamp-4">{formData.lessonContent || "Lesson content..."}</p>
                                         </div>
                                         {formData.codeSnippet && (
-                                            <div className="rounded-lg bg-[#1e1e1e] p-2 font-mono text-xs overflow-x-auto">
-                                                <code>{formData.codeSnippet.slice(0, 80)}{formData.codeSnippet.length > 80 ? "..." : ""}</code>
+                                            <div className="space-y-2">
+                                                <div className="rounded-lg bg-[#1e1e1e] p-2 font-mono text-xs overflow-x-auto">
+                                                    <code>{formData.codeSnippet.slice(0, 80)}{formData.codeSnippet.length > 80 ? "..." : ""}</code>
+                                                </div>
+                                                {formData.showCodePreview && (
+                                                    <div className="space-y-2 mt-3">
+                                                        <div className="text-[10px] font-bold text-emerald-400 flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 w-fit">
+                                                            <Eye size={10} /> Live HTML Preview
+                                                        </div>
+                                                        <div className="rounded-xl border border-white/10 bg-white overflow-hidden h-[150px]">
+                                                            <iframe
+                                                                srcDoc={`<!DOCTYPE html><html><body style="margin:0;padding:10px;font-family:sans-serif;">${formData.codeSnippet}</body></html>`}
+                                                                className="w-full h-full border-none"
+                                                                title="Admin Preview"
+                                                                key={formData.codeSnippet}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
                                         <div className="flex items-center gap-2 text-amber-400">
@@ -403,6 +505,22 @@ export default function SprintsClientPage({ targetPath, initialSprints }: { targ
                                             value={formData.codeSnippet || ""}
                                             onChange={(e) => setFormData({ ...formData, codeSnippet: e.target.value })}
                                         />
+
+                                        <div className="flex items-center gap-3 mt-3">
+                                            <button
+                                                type="button"
+                                                onClick={() => setFormData({ ...formData, showCodePreview: !formData.showCodePreview })}
+                                                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-bold transition-all border-2 ${formData.showCodePreview
+                                                    ? "bg-emerald-50 border-emerald-500 text-emerald-700"
+                                                    : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
+                                                    }`}
+                                            >
+                                                <div className={`w-4 h-4 rounded-full border-2 transition-all ${formData.showCodePreview ? "bg-emerald-500 border-emerald-500" : "bg-white border-slate-300"
+                                                    }`}></div>
+                                                Show Live HTML/CSS Preview
+                                            </button>
+                                            <p className="text-xs text-slate-400">If enabled, the code snippet will render as live HTML beside the code.</p>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -425,46 +543,130 @@ export default function SprintsClientPage({ targetPath, initialSprints }: { targ
                                     {storySectionExpanded && (
                                         <div className="mt-6 space-y-5">
                                             <div>
-                                                <label className="block text-sm font-bold text-[hsl(215,15%,45%)] mb-1 flex items-center gap-2"><BookOpen size={14} /> Story Context (1–3 sentences intro)</label>
+                                                <label className="block text-sm font-bold text-[hsl(215,15%,45%)] mb-1">Story Context (Intro)</label>
                                                 <textarea
-                                                    rows={2}
-                                                    placeholder="e.g. Your boss asks you to store a user's age in the system."
-                                                    className="w-full border border-amber-200 rounded-xl p-3 bg-white/80 focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none text-sm"
-                                                    value={formData.storyContext || ""}
+                                                    rows={3}
+                                                    className="w-full border border-[hsl(210,20%,88%)] rounded-xl p-3 bg-[hsl(210,25%,98%)] focus:outline-none focus:ring-2 focus:ring-amber-400 text-sm resize-none"
+                                                    placeholder="Set the scene..."
+                                                    value={formData.storyContext}
                                                     onChange={(e) => setFormData({ ...formData, storyContext: e.target.value })}
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-bold text-[hsl(215,15%,45%)] mb-1 flex items-center gap-2"><Sparkles size={14} /> Completion Story (1–3 sentences after finish)</label>
+                                                <label className="block text-sm font-bold text-[hsl(215,15%,45%)] mb-1">Completion Story (Outro)</label>
                                                 <textarea
-                                                    rows={2}
-                                                    placeholder="e.g. Great work! The system can now store user ages."
-                                                    className="w-full border border-amber-200 rounded-xl p-3 bg-white/80 focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none text-sm"
-                                                    value={formData.completionStory || ""}
+                                                    rows={3}
+                                                    className="w-full border border-[hsl(210,20%,88%)] rounded-xl p-3 bg-[hsl(210,25%,98%)] focus:outline-none focus:ring-2 focus:ring-amber-400 text-sm resize-none"
+                                                    placeholder="The reward message..."
+                                                    value={formData.completionStory}
                                                     onChange={(e) => setFormData({ ...formData, completionStory: e.target.value })}
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-bold text-[hsl(215,15%,45%)] mb-2 flex items-center gap-2"><Users size={14} /> Characters (boss, mentor, teammate, etc.)</label>
-                                                <div className="space-y-2">
-                                                    {(formData.characters || []).map((char: string, i: number) => (
-                                                        <div key={i} className="flex gap-2 items-center">
-                                                            <input
-                                                                type="text"
-                                                                placeholder="Character name"
-                                                                className="flex-1 border border-amber-200 rounded-lg p-2 text-sm bg-white/80 focus:outline-none focus:ring-2 focus:ring-amber-400"
-                                                                value={char}
-                                                                onChange={(e) => updateCharacter(i, e.target.value)}
-                                                            />
-                                                            <button type="button" onClick={() => removeCharacter(i)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
-                                                                <X size={14} />
-                                                            </button>
-                                                        </div>
-                                                    ))}
-                                                    <button type="button" onClick={addCharacter} className="text-sm text-amber-700 font-bold hover:underline flex items-center gap-1">
-                                                        + Add Character
-                                                    </button>
+                                                <label className="block text-sm font-bold text-[hsl(215,15%,45%)] mb-1">Characters (Comma Separated)</label>
+                                                <input
+                                                    type="text"
+                                                    className="w-full border border-[hsl(210,20%,88%)] rounded-xl p-3 bg-[hsl(210,25%,98%)] focus:outline-none focus:ring-2 focus:ring-amber-400 text-sm"
+                                                    placeholder="Dev, Codey..."
+                                                    value={formData.characters?.join(", ")}
+                                                    onChange={(e) => setFormData({ ...formData, characters: e.target.value.split(",").map(c => c.trim()).filter(Boolean) })}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Code Challenge Section */}
+                                <div className="bg-white p-6 rounded-2xl border border-[hsl(210,20%,88%)] shadow-sm">
+                                    <button
+                                        type="button"
+                                        onClick={() => setCodeSectionExpanded(!codeSectionExpanded)}
+                                        className="w-full flex items-center justify-between text-left"
+                                    >
+                                        <h3 className="font-bold text-[hsl(215,25%,15%)] text-lg flex items-center gap-2">
+                                            <Code size={20} className="text-[hsl(217,91%,60%)]" /> Code Challenge (Optional)
+                                            {hasCodeChallenge && (
+                                                <span className="text-xs font-normal px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">Active</span>
+                                            )}
+                                        </h3>
+                                        {codeSectionExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                                    </button>
+                                    <p className="text-sm text-[hsl(215,15%,45%)] mt-1">Tasks that require users to write code. Optional — users can skip to the quiz if empty.</p>
+
+                                    {codeSectionExpanded && (
+                                        <div className="mt-6 space-y-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                <div className="space-y-4">
+                                                    <h4 className="font-bold text-sm text-[hsl(215,15%,45%)]">Initial Code (User Starts With)</h4>
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-[hsl(215,15%,45%)] mb-1">HTML</label>
+                                                        <textarea
+                                                            rows={3}
+                                                            className="w-full border border-[hsl(210,20%,88%)] rounded-xl p-3 bg-[#1e1e1e] text-[#d4d4d4] focus:outline-none font-mono text-xs resize-none"
+                                                            value={formData.codeChallenge?.initialHtml}
+                                                            onChange={(e) => updateCodeChallenge("initialHtml", e.target.value)}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-[hsl(215,15%,45%)] mb-1">CSS</label>
+                                                        <textarea
+                                                            rows={3}
+                                                            className="w-full border border-[hsl(210,20%,88%)] rounded-xl p-3 bg-[#1e1e1e] text-[#d4d4d4] focus:outline-none font-mono text-xs resize-none"
+                                                            value={formData.codeChallenge?.initialCss}
+                                                            onChange={(e) => updateCodeChallenge("initialCss", e.target.value)}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-[hsl(215,15%,45%)] mb-1">JS</label>
+                                                        <textarea
+                                                            rows={3}
+                                                            className="w-full border border-[hsl(210,20%,88%)] rounded-xl p-3 bg-[#1e1e1e] text-[#d4d4d4] focus:outline-none font-mono text-xs resize-none"
+                                                            value={formData.codeChallenge?.initialJs}
+                                                            onChange={(e) => updateCodeChallenge("initialJs", e.target.value)}
+                                                        />
+                                                    </div>
                                                 </div>
+
+                                                <div className="space-y-4">
+                                                    <h4 className="font-bold text-sm text-[hsl(215,15%,45%)]">Solution Code (Show Answer)</h4>
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-[hsl(215,15%,45%)] mb-1">HTML</label>
+                                                        <textarea
+                                                            rows={3}
+                                                            className="w-full border border-[hsl(210,20%,88%)] rounded-xl p-3 bg-[#1e1e1e] text-[#d4d4d4] focus:outline-none font-mono text-xs resize-none"
+                                                            value={formData.codeChallenge?.solutionHtml}
+                                                            onChange={(e) => updateCodeChallenge("solutionHtml", e.target.value)}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-[hsl(215,15%,45%)] mb-1">CSS</label>
+                                                        <textarea
+                                                            rows={3}
+                                                            className="w-full border border-[hsl(210,20%,88%)] rounded-xl p-3 bg-[#1e1e1e] text-[#d4d4d4] focus:outline-none font-mono text-xs resize-none"
+                                                            value={formData.codeChallenge?.solutionCss}
+                                                            onChange={(e) => updateCodeChallenge("solutionCss", e.target.value)}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-[hsl(215,15%,45%)] mb-1">JS</label>
+                                                        <textarea
+                                                            rows={3}
+                                                            className="w-full border border-[hsl(210,20%,88%)] rounded-xl p-3 bg-[#1e1e1e] text-[#d4d4d4] focus:outline-none font-mono text-xs resize-none"
+                                                            value={formData.codeChallenge?.solutionJs}
+                                                            onChange={(e) => updateCodeChallenge("solutionJs", e.target.value)}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-sm font-bold text-[hsl(215,15%,45%)] mb-1">Hint</label>
+                                                <textarea
+                                                    rows={2}
+                                                    className="w-full border border-[hsl(210,20%,88%)] rounded-xl p-3 bg-[hsl(210,25%,98%)] focus:outline-none focus:ring-2 focus:ring-[hsl(217,91%,60%)] text-sm resize-none"
+                                                    value={formData.codeChallenge?.hint}
+                                                    onChange={(e) => updateCodeChallenge("hint", e.target.value)}
+                                                />
                                             </div>
                                         </div>
                                     )}
@@ -483,6 +685,9 @@ export default function SprintsClientPage({ targetPath, initialSprints }: { targ
                                             </button>
                                             <button type="button" onClick={() => addQuestion("ordering")} className="text-xs bg-white border border-[hsl(210,20%,88%)] px-3 py-1.5 rounded-lg hover:bg-[hsl(210,20%,94%)] font-bold transition-colors">
                                                 + Ordering
+                                            </button>
+                                            <button type="button" onClick={() => addQuestion("replica")} className="text-xs bg-white border border-[hsl(210,20%,88%)] px-3 py-1.5 rounded-lg hover:bg-[hsl(210,20%,94%)] font-bold transition-colors">
+                                                + Replica
                                             </button>
                                         </div>
                                     </div>
@@ -620,6 +825,57 @@ export default function SprintsClientPage({ targetPath, initialSprints }: { targ
                                                     </button>
                                                 </div>
                                             )}
+
+                                            {/* Replica Specific Fields */}
+                                            {q.type === "replica" && (
+                                                <div className="space-y-4 bg-[hsl(210,25%,98%)] p-4 rounded-xl border border-[hsl(210,20%,92%)]">
+                                                    <p className="text-xs text-[hsl(215,15%,45%)] bg-blue-50 text-blue-700 p-3 rounded-lg border border-blue-100 mb-2">
+                                                        <strong>Replica Challenge:</strong> Users will see the "Replica" layout and must recreate it in their editor.
+                                                    </p>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        <div className="space-y-2">
+                                                            <label className="block text-xs font-bold text-[hsl(215,15%,45%)] uppercase tracking-wider">Target Replica HTML</label>
+                                                            <textarea
+                                                                rows={4}
+                                                                placeholder="Static HTML for the target design..."
+                                                                className="w-full border border-[hsl(210,20%,88%)] rounded-xl p-3 bg-[#1e1e1e] text-[#d4d4d4] focus:outline-none font-mono text-xs resize-none"
+                                                                value={q.replicaHtml || ""}
+                                                                onChange={(e) => updateQuestion(qIndex, "replicaHtml", e.target.value)}
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <label className="block text-xs font-bold text-[hsl(215,15%,45%)] uppercase tracking-wider">Target Replica CSS</label>
+                                                            <textarea
+                                                                rows={4}
+                                                                placeholder="CSS for the target design..."
+                                                                className="w-full border border-[hsl(210,20%,88%)] rounded-xl p-3 bg-[#1e1e1e] text-[#d4d4d4] focus:outline-none font-mono text-xs resize-none"
+                                                                value={q.replicaCss || ""}
+                                                                onChange={(e) => updateQuestion(qIndex, "replicaCss", e.target.value)}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <label className="block text-xs font-bold text-[hsl(215,15%,45%)] uppercase tracking-wider">Initial HTML (User Starts With)</label>
+                                                        <textarea
+                                                            rows={3}
+                                                            placeholder="Starter code for the user..."
+                                                            className="w-full border border-[hsl(210,20%,88%)] rounded-xl p-3 bg-[#1e1e1e] text-[#d4d4d4] focus:outline-none font-mono text-xs resize-none"
+                                                            value={q.initialHtml || ""}
+                                                            onChange={(e) => updateQuestion(qIndex, "initialHtml", e.target.value)}
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <label className="block text-xs font-bold text-[hsl(215,15%,45%)] uppercase tracking-wider">Hint</label>
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Helpful hint for the user..."
+                                                            className="w-full border border-[hsl(210,20%,88%)] rounded-xl p-3 bg-white focus:outline-none focus:ring-2 focus:ring-[hsl(217,91%,60%)] text-sm"
+                                                            value={q.hint || ""}
+                                                            onChange={(e) => updateQuestion(qIndex, "hint", e.target.value)}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
 
@@ -650,6 +906,139 @@ export default function SprintsClientPage({ targetPath, initialSprints }: { targ
                             </button>
                         </div>
 
+                    </div>
+                </div>
+            )}
+            {/* Seed from JSON Modal */}
+            {showSeedModal && (
+                <div className="fixed inset-0 bg-[hsl(215,25%,15%,0.6)] backdrop-blur-md z-[100] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-[32px] w-full max-w-2xl max-h-[90vh] flex flex-col shadow-[0_32px_80px_rgba(0,0,0,0.3)] border border-[hsl(210,20%,88%)] overflow-hidden">
+                        <div className="p-8 border-b border-[hsl(210,20%,88%)] flex items-center justify-between bg-[hsl(210,25%,98%)] shrink-0">
+                            <div>
+                                <h2 className="text-2xl font-black text-[hsl(215,25%,15%)] flex items-center gap-3">
+                                    <Database className="text-[hsl(217,91%,60%)]" /> Seed Sprints from JSON
+                                </h2>
+                                <p className="text-[hsl(215,15%,45%)] font-medium mt-1">Paste a JSON array of sprint objects to bulk-import.</p>
+                            </div>
+                            <button
+                                onClick={() => setShowSeedModal(false)}
+                                className="p-2 hover:bg-red-50 hover:text-red-500 rounded-xl transition-all text-[hsl(215,15%,45%)]"
+                            >
+                                <X size={24} />
+                            </button>
+                        </div>
+
+                        <div className="p-8 overflow-y-auto flex-1 bg-white">
+                            <div className="mb-6">
+                                <label className="block text-sm font-bold text-[hsl(215,25%,15%)] mb-2">JSON Content</label>
+                                <textarea
+                                    value={seedJson}
+                                    onChange={(e) => setSeedJson(e.target.value)}
+                                    placeholder='[{ "title": "...", "slug": "...", ... }]'
+                                    className="w-full h-[400px] bg-[hsl(210,25%,98%)] border-2 border-[hsl(210,20%,88%)] rounded-2xl p-6 font-mono text-sm focus:border-[hsl(217,91%,60%)] focus:ring-4 focus:ring-[hsl(217,91%,60%,0.1)] outline-none transition-all resize-none"
+                                />
+                            </div>
+
+                            <div className="mb-6">
+                                <div className="bg-amber-50/70 border border-amber-200 rounded-[24px] p-6 shadow-sm">
+                                    <div className="flex items-center justify-between mb-6">
+                                        <div className="flex items-center gap-3">
+                                            <div className="bg-amber-100 p-2 rounded-xl text-amber-600">
+                                                <Sparkles size={20} />
+                                            </div>
+                                            <div>
+                                                <h3 className="font-black text-amber-900 text-lg leading-tight">AI Generation Prompt</h3>
+                                                <p className="text-amber-800/70 text-sm font-medium">Use this prompt to generate correct sprint JSON</p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                const prompt = `Act as a curriculum designer for a tech learning platform. Your task is to generate a JSON array of "Sprint" objects for a learning path.
+
+MODEL STRUCTURE:
+- title: concise title
+- slug: url-safe-slug
+- lessonContent: Detailed markdown lesson. 
+  FORMATTING: Use **bold** for emphasis, \`inline code\` for variable names. Use [link](url) for resources. Keep it conversational.
+- xpReward: 10 to 100
+- order: sequence number
+- storyContext (opt): Narrative intro (no markdown)
+- completionStory (opt): Narrative outro (no markdown)
+- questions (at least 1):
+  * MCQ: { type: "mcq", question: "...", options: ["..."], correctAnswerIndex: 0 }
+  * Blanks: { type: "fill_in_blanks", question: "text {{blank}}", blanks: ["correct"], draggables: ["correct", "distractor"] }
+  * Ordering: { type: "ordering", question: "...", itemsToOrder: ["step1", "step2"] }
+  * Replica: { type: "replica", question: "Rebuild this layout", replicaHtml: "...", replicaCss: "...", initialHtml: "...", hint: "..." }
+- codeChallenge (opt): { initialHtml, initialCss, initialJs, solutionHtml, solutionCss, solutionJs, hint, instructions }
+
+Format as a valid JSON array. Generate 5 sprints for "[PATH_NAME]". Existing IDs will be preserved if provided, otherwise new ones will be generated.`;
+                                                navigator.clipboard.writeText(prompt.replace("[PATH_NAME]", targetPath.name));
+                                                // Using a simple state-based feedback instead of alert would be better but let's stick to simplicity for now or use a toast if available.
+                                                // I'll add a temporary "Copied!" text if I can, but let's just use alert for now to be safe.
+                                                alert("Prompt copied! Replace [PATH_NAME] with your actual path name in the AI chat.");
+                                            }}
+                                            className="bg-amber-500 hover:bg-amber-600 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-amber-500/20 flex items-center gap-2 text-sm"
+                                        >
+                                            <Database size={16} /> Copy Full Prompt
+                                        </button>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div className="bg-white/60 p-4 rounded-2xl border border-amber-200/50">
+                                            <h4 className="text-xs font-black text-amber-800 uppercase tracking-widest mb-3">Interactivity</h4>
+                                            <ul className="space-y-2 text-xs text-amber-900/80 font-medium">
+                                                <li className="flex items-center gap-2">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-amber-400"></div>
+                                                    MCQ (Multiple Choice)
+                                                </li>
+                                                <li className="flex items-center gap-2">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-amber-400"></div>
+                                                    Fill-in-the-blanks ({"{{blank}}"})
+                                                </li>
+                                                <li className="flex items-center gap-2">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-amber-400"></div>
+                                                    Step Ordering
+                                                </li>
+                                            </ul>
+                                        </div>
+                                        <div className="bg-white/60 p-4 rounded-2xl border border-amber-200/50">
+                                            <h4 className="text-xs font-black text-amber-800 uppercase tracking-widest mb-3">Extra Features</h4>
+                                            <ul className="space-y-2 text-xs text-amber-900/80 font-medium">
+                                                <li className="flex items-center gap-2">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-amber-400"></div>
+                                                    Narrative Story Context
+                                                </li>
+                                                <li className="flex items-center gap-2">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-amber-400"></div>
+                                                    Interactive Code Challenges
+                                                </li>
+                                                <li className="flex items-center gap-2">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-amber-400"></div>
+                                                    Custom XP & Sequence
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="p-6 border-t border-[hsl(210,20%,88%)] bg-[hsl(210,25%,98%)] flex justify-end gap-3 shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => setShowSeedModal(false)}
+                                className="px-6 py-2.5 rounded-xl text-[hsl(215,25%,15%)] font-bold hover:bg-[hsl(210,20%,94%)] transition-colors border border-[hsl(210,20%,88%)]"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSeedSubmit}
+                                disabled={loading || !seedJson.trim()}
+                                className="bg-[hsl(217,91%,60%)] text-white px-8 py-2.5 rounded-xl font-bold hover:bg-[hsl(217,91%,55%)] transition-all disabled:opacity-50 shadow-[0_0_20px_hsl(217,91%,60%,0.2)]"
+                            >
+                                {loading ? "Seeding..." : "Import Sprints"}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
