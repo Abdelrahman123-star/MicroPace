@@ -8,7 +8,7 @@ interface CodeStepProps {
     setShowConfirm: (val: { message: string, onConfirm: () => void } | null) => void
     instructions?: string
 }
-// const empty = " "
+
 export default function CodeStep({ codeChallenge, onComplete, notify, setShowConfirm, instructions }: CodeStepProps) {
     return (
         <div style={{ padding: "0" }}>

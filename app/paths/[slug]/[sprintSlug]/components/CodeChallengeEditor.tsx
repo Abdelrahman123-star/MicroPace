@@ -49,6 +49,7 @@ export default function CodeChallengeEditor({
     const [replicaUrl, setReplicaUrl] = useState<string>("");
     const [showHint, setShowHint] = useState(false);
     const [showSolutionCode, setShowSolutionCode] = useState(false);
+    const [solutionTab, setSolutionTab] = useState<"html" | "css" | "js">("html");
 
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const debounceTimer = useRef<NodeJS.Timeout | null>(null);
@@ -132,7 +133,7 @@ export default function CodeChallengeEditor({
     };
 
     const handleShowAnswer = () => {
-        if (replicaHtml || replicaCss) {
+        if (replicaHtml || replicaCss || solutionHtml || solutionCss || solutionJs) {
             setShowSolutionCode(!showSolutionCode);
         } else {
             setShowConfirm({
@@ -169,7 +170,7 @@ export default function CodeChallengeEditor({
                         </div>
                         <h3 className="font-bold text-lg text-white">Instructions</h3>
                     </div>
-                    <p className="text-white/70 text-sm leading-relaxed max-w-4xl">{instructions}</p>
+                    <p className="text-white/70 text-sm leading-relaxed max-w-4xl whitespace-pre-wrap">{instructions}</p>
                 </div>
             )}
             <div className="flex flex-col lg:flex-row gap-0 h-[85vh] border-y border-white/10">
@@ -307,29 +308,62 @@ export default function CodeChallengeEditor({
                 </div>
             )}
 
-            {showSolutionCode && (replicaHtml || replicaCss) && (
-                <div className="bg-blue-400/10 border border-blue-400/20 p-4 rounded-xl flex gap-3 animate-in fade-in slide-in-from-bottom-2 mx-4 my-2">
-                    <Eye size={20} className="text-blue-400 shrink-0 mt-0.5" />
-                    <div className="flex-1 overflow-hidden">
-                        <p className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-2">Target Code (Reference)</p>
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                            {replicaHtml && (
-                                <div className="space-y-1">
-                                    <span className="text-[10px] text-blue-300 uppercase tracking-widest font-bold">HTML</span>
-                                    <pre className="bg-[#1e1e1e] p-3 rounded-lg text-xs font-mono text-blue-100 overflow-x-auto border border-blue-400/10 whitespace-pre-wrap">
-                                        {replicaHtml}
-                                    </pre>
-                                </div>
+            {showSolutionCode && (replicaHtml || replicaCss || solutionHtml || solutionCss || solutionJs) && (
+                <div className="bg-blue-400/10 border border-blue-400/20 p-4 rounded-xl flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-2 mx-4 my-2">
+                    <div className="flex items-center justify-between border-b border-blue-400/20 pb-2">
+                        <div className="flex items-center gap-2">
+                            <Eye size={18} className="text-blue-400" />
+                            <p className="text-xs font-bold text-blue-400 uppercase tracking-wider">Solution / Reference Code</p>
+                        </div>
+                        <div className="flex gap-2">
+                            {(replicaHtml || solutionHtml) && (
+                                <button
+                                    onClick={() => setSolutionTab("html")}
+                                    className={`px-3 py-1 text-[10px] font-bold rounded-md transition-colors ${solutionTab === "html" ? "bg-blue-500 text-white" : "bg-white/5 text-blue-400 hover:bg-white/10"}`}
+                                >
+                                    HTML
+                                </button>
                             )}
-                            {replicaCss && (
-                                <div className="space-y-1">
-                                    <span className="text-[10px] text-blue-300 uppercase tracking-widest font-bold">CSS</span>
-                                    <pre className="bg-[#1e1e1e] p-3 rounded-lg text-xs font-mono text-blue-100 overflow-x-auto border border-blue-400/10 whitespace-pre-wrap">
-                                        {replicaCss}
-                                    </pre>
-                                </div>
+                            {(replicaCss || solutionCss) && (
+                                <button
+                                    onClick={() => setSolutionTab("css")}
+                                    className={`px-3 py-1 text-[10px] font-bold rounded-md transition-colors ${solutionTab === "css" ? "bg-blue-500 text-white" : "bg-white/5 text-blue-400 hover:bg-white/10"}`}
+                                >
+                                    CSS
+                                </button>
+                            )}
+                            {(replicaJs || solutionJs) && (
+                                <button
+                                    onClick={() => setSolutionTab("js")}
+                                    className={`px-3 py-1 text-[10px] font-bold rounded-md transition-colors ${solutionTab === "js" ? "bg-blue-500 text-white" : "bg-white/5 text-blue-400 hover:bg-white/10"}`}
+                                >
+                                    JS
+                                </button>
                             )}
                         </div>
+                    </div>
+                    <div className="flex-1 overflow-hidden">
+                        {solutionTab === "html" && (replicaHtml || solutionHtml) && (
+                            <div className="space-y-1">
+                                <pre className="bg-[#1e1e1e] p-3 rounded-lg text-xs font-mono text-blue-100 overflow-x-auto border border-blue-400/10 whitespace-pre-wrap max-h-[200px] overflow-y-auto custom-scrollbar">
+                                    {replicaHtml || solutionHtml}
+                                </pre>
+                            </div>
+                        )}
+                        {solutionTab === "css" && (replicaCss || solutionCss) && (
+                            <div className="space-y-1">
+                                <pre className="bg-[#1e1e1e] p-3 rounded-lg text-xs font-mono text-blue-100 overflow-x-auto border border-blue-400/10 whitespace-pre-wrap max-h-[200px] overflow-y-auto custom-scrollbar">
+                                    {replicaCss || solutionCss}
+                                </pre>
+                            </div>
+                        )}
+                        {solutionTab === "js" && (replicaJs || solutionJs) && (
+                            <div className="space-y-1">
+                                <pre className="bg-[#1e1e1e] p-3 rounded-lg text-xs font-mono text-blue-100 overflow-x-auto border border-blue-400/10 whitespace-pre-wrap max-h-[200px] overflow-y-auto custom-scrollbar">
+                                    {replicaJs || solutionJs}
+                                </pre>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

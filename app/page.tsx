@@ -196,6 +196,7 @@ export default function SprintIoPage() {
 
       <HowItWorks />
       <SkillPath />
+
       <SprintDemo />
 
 

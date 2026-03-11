@@ -66,6 +66,7 @@ export default function SprintsClientPage({ targetPath, initialSprints }: { targ
                 solutionCss: "",
                 solutionJs: "",
                 hint: "",
+                instructions: ""
             }
         });
         setIsModalOpen(true);
@@ -660,6 +661,16 @@ export default function SprintsClientPage({ targetPath, initialSprints }: { targ
                                             </div>
 
                                             <div>
+                                                <label className="block text-sm font-bold text-[hsl(215,15%,45%)] mb-1">Instructions (Markdown)</label>
+                                                <textarea
+                                                    rows={3}
+                                                    placeholder="Step-by-step instructions for the user..."
+                                                    className="w-full border border-[hsl(210,20%,88%)] rounded-xl p-3 bg-[hsl(210,25%,98%)] focus:outline-none focus:ring-2 focus:ring-[hsl(217,91%,60%)] text-sm resize-none"
+                                                    value={formData.codeChallenge?.instructions || ""}
+                                                    onChange={(e) => updateCodeChallenge("instructions", e.target.value)}
+                                                />
+                                            </div>
+                                            <div>
                                                 <label className="block text-sm font-bold text-[hsl(215,15%,45%)] mb-1">Hint</label>
                                                 <textarea
                                                     rows={2}
@@ -964,12 +975,20 @@ MODEL STRUCTURE:
 - order: sequence number
 - storyContext (opt): Narrative intro (no markdown)
 - completionStory (opt): Narrative outro (no markdown)
+- characters (opt): Array of strings (character names)
+- showCodePreview (opt): boolean (if true, shows live HTML preview of codeSnippet)
+- codeSnippet (opt): code string for the terminal/preview
+- codeLanguage (opt): string (e.g., "html", "javascript", "bash")
 - questions (at least 1):
   * MCQ: { type: "mcq", question: "...", options: ["..."], correctAnswerIndex: 0 }
   * Blanks: { type: "fill_in_blanks", question: "text {{blank}}", blanks: ["correct"], draggables: ["correct", "distractor"] }
   * Ordering: { type: "ordering", question: "...", itemsToOrder: ["step1", "step2"] }
   * Replica: { type: "replica", question: "Rebuild this layout", replicaHtml: "...", replicaCss: "...", initialHtml: "...", hint: "..." }
-- codeChallenge (opt): { initialHtml, initialCss, initialJs, solutionHtml, solutionCss, solutionJs, hint, instructions }
+- codeChallenge (opt): { 
+    initialHtml, initialCss, initialJs, 
+    solutionHtml, solutionCss, solutionJs, 
+    hint, instructions (Markdown content) 
+  }
 
 Format as a valid JSON array. Generate 5 sprints for "[PATH_NAME]". Existing IDs will be preserved if provided, otherwise new ones will be generated.`;
                                                 navigator.clipboard.writeText(prompt.replace("[PATH_NAME]", targetPath.name));
