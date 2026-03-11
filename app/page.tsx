@@ -1,8 +1,9 @@
 "use client";
-import { motion, useScroll, useTransform, } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
 
 import { SprintDemo } from '@/components/sprint-demo';
+import { HeroDemo } from '@/components/hero-demo';
 import { SkillPath } from '@/components/skill-path';
 
 import {
@@ -20,17 +21,11 @@ const fadeUp = {
   }),
 };
 
-
-// Constants are imported from @/lib/constants
-
 export default function SprintIoPage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: containerRef });
-  const heroY = useTransform(scrollYProgress, [0, 0.3], [0, -120]);
-  const bgY = useTransform(scrollYProgress, [0, 1], [0, -200]);
 
 
-  // ✅ FIX: Add state for snowflakes
   const [snowflakes, setSnowflakes] = useState<Array<{
     id: number;
     left: string;
@@ -39,32 +34,21 @@ export default function SprintIoPage() {
     fontSize: string;
   }>>([]);
 
-  // ✅ FIX: Generate snowflakes only on client
   useEffect(() => {
     const flakes = Array.from({ length: 30 }).map((_, i) => ({
       id: i,
       left: `${Math.random() * 100}%`,
-      duration: `${5 + Math.random() * 10}s`, // Faster falling
+      duration: `${5 + Math.random() * 10}s`,
       delay: `${Math.random() * 5}s`,
-      fontSize: `${15 + Math.random() * 20}px`, // Bigger flakes
+      fontSize: `${15 + Math.random() * 20}px`,
     }));
     setSnowflakes(flakes);
   }, []);
 
-
-  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  const [showResult, setShowResult] = useState(false);
-
-  const handleAnswer = (index: number) => {
-    setSelectedAnswer(index);
-    setTimeout(() => setShowResult(true), 500);
-  };
-
   return (
-    <div ref={containerRef} className="min-h-screen bg-[hsl(210,25%,96%)] overflow-x-hidden">
+    <div ref={containerRef} className="min-h-screen bg-[hsl(210,25%,96%)] overflow-x-hidden pt-10">
 
-
-      {/* Snowfall particles - FIXED */}
+      {/* Snowfall Layer */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         {snowflakes.map((flake) => (
           <div
@@ -82,60 +66,90 @@ export default function SprintIoPage() {
         ))}
       </div>
 
-
       {/* ─── HERO ─── */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-15">
-        <motion.div style={{ y: bgY }} className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-20 left-1/4 w-96 h-96 rounded-full bg-[hsl(217,91%,60%,0.1)] blur-[100px]" />
-          <div className="absolute bottom-20 right-1/4 w-80 h-80 rounded-full bg-[hsl(199,89%,48%,0.1)] blur-[100px]" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-[hsl(217,91%,60%,0.05)] blur-[150px]" />
-        </motion.div>
-        <motion.div style={{ y: heroY }} className="relative z-10 max-w-4xl mx-auto px-6 text-center">
-          <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={0} className="flex items-center justify-center gap-2 mb-8">
-            <Snowflake className="text-[hsl(217,91%,60%)]" size={18} />
-            <span className="text-xs uppercase tracking-[0.3em] text-[hsl(215,15%,45%)] font-bold">Gamified Learning Platform</span>
-            <Snowflake className="text-[hsl(217,91%,60%)]" size={18} />
-          </motion.div>
-          <motion.h1
-            variants={fadeUp} initial="hidden" animate="visible" custom={1}
-            className="text-6xl md:text-8xl font-bold mb-8 leading-[0.95] tracking-tight"
-          >
-            <span className="text-[hsl(215,25%,15%)]">Cool Mind,</span>
-            <br />
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-[hsl(217,91%,60%)] via-[hsl(199,89%,48%)] to-[hsl(217,91%,60%)] font-extrabold">Sharp Skills.</span>
-          </motion.h1>
-          <motion.p variants={fadeUp} initial="hidden" animate="visible" custom={2} className="text-[hsl(215,15%,45%)] text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed font-medium">
-            Transform your learning into an exhilarating sprint. Earn XP, maintain streaks, unlock rewards, and compete with learners worldwide.
-          </motion.p>
-          <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={3} className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <button onClick={() => window.location.href = "/dashboard"} className="bg-[hsl(217,91%,60%)] text-white text-base px-8 py-4 rounded-xl font-bold inline-flex items-center gap-2 hover:bg-[hsl(217,91%,55%)] transition-colors shadow-[0_0_60px_hsl(217,91%,60%,0.2)]">
-              Get started <ArrowRight size={18} />
-            </button>
-            <button onClick={() => window.location.href = "/paths"} className="border border-[hsl(210,20%,88%)] bg-[hsl(210,25%,96%)] text-[hsl(215,25%,15%)] text-base px-8 py-4 rounded-xl font-semibold hover:bg-[hsl(199,89%,48%,0.05)] transition-colors">
-              Explore Paths
-            </button>
-          </motion.div>
-          <motion.div
-            variants={fadeUp} initial="hidden" animate="visible" custom={4}
-            className="mt-16 inline-flex items-center gap-3 bg-white/60 backdrop-blur-xl border border-[hsl(210,20%,88%,0.5)] shadow-lg rounded-full px-6 py-3"
-          >
-            <Sparkles className="text-[hsl(217,91%,60%)]" size={16} />
-            <span className="text-sm font-semibold text-[hsl(215,25%,15%)]">Join 2M+ learners earning <span className="text-[hsl(217,91%,60%)] font-extrabold">50,000+ XP</span> daily</span>
-          </motion.div>
-        </motion.div>
+      <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden py-16 md:py-24">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-20 left-1/4 w-[400px] h-[400px] rounded-full bg-[hsl(217,91%,60%,0.08)] blur-[100px]" />
+          <div className="absolute bottom-20 right-1/4 w-[500px] h-[500px] rounded-full bg-[hsl(199,89%,48%,0.08)] blur-[120px]" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-[hsl(217,91%,60%,0.03)] blur-[150px]" />
+        </div>
+
+        <div className="relative z-10 max-w-7xl mx-auto px-6 w-full">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+
+            {/* Left: Content */}
+            <motion.div
+              className="text-left lg:max-w-xl"
+            >
+
+              <motion.h1
+                variants={fadeUp} initial="hidden" animate="visible" custom={1}
+                className="text-5xl md:text-7xl lg:text-8xl font-black mb-8 leading-[0.9] tracking-tighter text-[hsl(215,25%,15%)]"
+              >
+                Cool Mind,
+                <br />
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-500 to-blue-600 font-black italic">
+                  Sharp Skills.
+                </span>
+              </motion.h1>
+
+              <motion.p
+                variants={fadeUp} initial="hidden" animate="visible" custom={2}
+                className="text-[hsl(215,15%,45%)] text-lg md:text-xl mb-10 leading-relaxed font-bold tracking-tight opacity-80"
+              >
+                Transform your learning into an exhilarating sprint. Earn XP, maintain streaks, unlock rewards, and compete with learners worldwide.
+              </motion.p>
+
+              <motion.div
+                variants={fadeUp} initial="hidden" animate="visible" custom={3}
+                className="flex flex-col sm:flex-row items-start gap-4"
+              >
+                <button
+                  onClick={() => window.location.href = "/dashboard"}
+                  className="w-full sm:w-auto bg-gradient-to-br from-blue-600 to-indigo-700 text-white text-base px-10 py-5 rounded-2xl font-black inline-flex items-center justify-center gap-2 hover:translate-y-[-2px] hover:shadow-[0_15px_40px_-10px_rgba(37,99,235,0.4)] transition-all active:scale-95"
+                >
+                  Get started <ArrowRight size={20} strokeWidth={3} />
+                </button>
+                <button
+                  onClick={() => window.location.href = "/paths"}
+                  className="w-full sm:w-auto border-2 border-[hsl(210,20%,88%)] bg-white/50 backdrop-blur-sm text-[hsl(215,25%,15%)] text-base px-10 py-5 rounded-2xl font-black hover:bg-white transition-all active:scale-95"
+                >
+                  Explore Paths
+                </button>
+              </motion.div>
+
+              <motion.div
+                variants={fadeUp} initial="hidden" animate="visible" custom={4}
+                className="mt-14 inline-flex items-center gap-3"
+              >
+                <div className="flex -space-x-4">
+                  {[1, 2, 3, 4].map(i => (
+                    <div key={i} className={`w-10 h-10 rounded-full border-4 border-white bg-blue-${i * 100 + 100} shadow-sm flex items-center justify-center text-[10px] font-bold text-white`}>
+                      {String.fromCharCode(64 + i)}
+                    </div>
+                  ))}
+                  <div className="w-10 h-10 rounded-full border-4 border-white bg-blue-600 flex items-center justify-center text-[10px] font-bold text-white">+2M</div>
+                </div>
+                <span className="text-xs font-bold text-[hsl(215,15%,45%)] uppercase tracking-wider">Join millions learning now</span>
+              </motion.div>
+            </motion.div>
+
+            {/* Right: Code Animation */}
+            <motion.div
+              className="relative lg:block"
+            >
+              <HeroDemo />
+            </motion.div>
+          </div>
+        </div>
+
+        {/* Decorations */}
         <motion.div
-          animate={{ y: [-10, 10, -10] }}
-          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-32 right-16 hidden lg:block"
+          animate={{ y: [-20, 20, -20], rotate: [0, 10, 0] }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-[20%] right-[5%] hidden xl:block opacity-20"
         >
-          <div className="w-24 h-24 bg-white/60 backdrop-blur-xl border border-[hsl(210,20%,88%,0.5)] rounded-2xl rotate-45 shadow-[inset_0_0_0_1px_hsl(217,91%,60%,0.15)]" />
-        </motion.div>
-        <motion.div
-          animate={{ y: [10, -15, 10] }}
-          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute bottom-40 left-16 hidden lg:block"
-        >
-          <div className="w-16 h-16 bg-white/60 backdrop-blur-xl border border-[hsl(210,20%,88%,0.5)] rounded-xl rotate-12 shadow-[inset_0_0_0_1px_hsl(217,91%,60%,0.15)]" />
+          <div className="w-32 h-32 bg-indigo-500 rounded-full blur-[80px]" />
         </motion.div>
       </section>
 
@@ -151,6 +165,7 @@ export default function SprintIoPage() {
               A complete gamification engine designed to make learning irresistible.
             </motion.p>
           </motion.div>
+
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} className="grid md:grid-cols-2 gap-6">
             {features.map((f, i) => (
               <motion.div
@@ -192,15 +207,9 @@ export default function SprintIoPage() {
         </div>
       </section>
 
-
-
       <HowItWorks />
       <SkillPath />
-
       <SprintDemo />
-
-
-
 
       {/* ─── LEADERBOARD ─── */}
       <section id="leaderboard" className="relative z-10 py-24">
@@ -239,6 +248,7 @@ export default function SprintIoPage() {
           </motion.div>
         </div>
       </section>
+
       {/* ─── TESTIMONIALS ─── */}
       <section id="testimonials" className="relative z-10 py-16">
         <div className="max-w-6xl mx-auto px-6">
@@ -279,7 +289,8 @@ export default function SprintIoPage() {
           </div>
         </div>
       </section>
-      {/* ─── STATS BAR ─── */}
+
+      {/* ─── STATS ─── */}
       <section className="relative z-10 py-8">
         <div className="max-w-5xl mx-auto px-6">
           <motion.div
@@ -295,13 +306,13 @@ export default function SprintIoPage() {
           </motion.div>
         </div>
       </section>
-      {/* ─── CTA ─── */}
 
+      {/* ─── CTA ─── */}
       <section className="relative z-10 py-24">
         <div className="max-w-3xl mx-auto px-6">
           <motion.div
             initial="hidden" whileInView="visible" viewport={{ once: true }}
-            className="bg-white/80 backdrop-blur-2xl border border-[hsl(210,20%,88%,0.6)] shadow-xl rounded-3xl p-12 md:p-16 text-center shadow-[0_0_60px_hsl(217,91%,60%,0.2)]"
+            className="bg-white/80 backdrop-blur-2xl border border-[hsl(210,20%,88%,0.6)] shadow-xl rounded-3xl p-12 md:p-16 text-center"
           >
             <motion.div variants={fadeUp} custom={0} className="w-16 h-16 rounded-2xl bg-[hsl(217,91%,60%,0.1)] flex items-center justify-center mx-auto mb-6">
               <Sparkles className="text-[hsl(217,91%,60%)]" size={28} />
